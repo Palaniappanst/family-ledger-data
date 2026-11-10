@@ -51,6 +51,11 @@ button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visi
 .tabs button[aria-selected=true]{background:var(--panel2);border-color:var(--tape);color:var(--tape);font-weight:600}
 .tab>section:first-child,.tab>.kpis:first-child{margin-top:0}
 .bar.sel span:first-child{color:var(--tape);font-weight:600}
+.pend{border-left:4px solid var(--tape)}.pend h2 small{font:600 15px 'Source Sans 3',sans-serif;color:var(--tape)}
+.pend .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:10px 0;border-top:1px solid var(--grid)}
+.pend .row select{grid-column:1/-1;width:100%}.pend .row.done select{border-color:var(--ok)}
+#decbar{position:sticky;bottom:0;display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--panel2);
+border:1px solid var(--tape);padding:10px 14px;margin-top:16px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
 .wrap{overflow-x:auto}
 /* phones: each table row becomes a card - date + amount on top, narration full width below */
 @media (max-width:640px){
@@ -87,6 +92,7 @@ summary{cursor:pointer;font-size:22px;font-weight:700}
 <div class="tab" id="t-cbe">
 <div class="kpis" id="kpis"></div>
 <div class="kpis" id="thotbox"></div>
+<section class="pend" id="pd-cbe" hidden></section>
 <section id="detail" hidden><div class="dh"><h2 id="dt"></h2><button id="dclose">Close</button></div>
 <p class="dim" id="dnote"></p><div class="wrap"><table id="dtab"></table></div></section>
 
@@ -116,15 +122,21 @@ summary{cursor:pointer;font-size:22px;font-weight:700}
 <details style="margin-top:12px"><summary>QC: manual-sheet entries not found in any bank statement</summary><table id="unm"></table></details></section>
 </div>
 </div>
-<div class="tab" id="t-thot" hidden><div class="kpis" id="th-k"></div>
+<div class="tab" id="t-thot" hidden><div class="kpis" id="th-k"></div><section class="pend" id="pd-thot" hidden></section>
 <div class="two"><section><h2>By payee</h2><div id="th-p"></div></section><section><h2>By month</h2><div id="th-m"></div></section></div>
 <section><h2>All thottam payments</h2><div class="wrap"><table class="cards" id="th-t"></table></div></section></div>
-<div class="tab" id="t-spend" hidden><div class="filters" style="margin-top:16px"><select id="sp-who" aria-label="Whose account"></select><select id="sp-mon" aria-label="Month"></select></div><div class="kpis" id="sp-k"></div>
+<div class="tab" id="t-spend" hidden><div class="filters" style="margin-top:16px"><select id="sp-who" aria-label="Whose account"></select><select id="sp-mon" aria-label="Month"></select></div><div class="kpis" id="sp-k"></div><section class="pend" id="pd-spend" hidden></section>
 <div class="two"><section><h2>By category</h2><div id="sp-c"></div></section><section><h2>Month by month</h2><div id="sp-m"></div></section></div>
 <section><h2 id="sp-th">Payments</h2><div class="wrap"><table class="cards" id="sp-t"></table></div></section></div>
 <div class="tab" id="t-loans" hidden><div class="kpis" id="ln-k"></div><div id="ln-s"></div></div>
 <div class="tab" id="t-assets" hidden><div class="kpis" id="as-k"></div><section><h2>Assets</h2><div id="as-l"></div></section></div>
 <div id="tip"></div>
+<div id="decbar" hidden><span id="decn"></span><button id="decsend">Send my choices</button></div>
+<section id="decout" hidden><div class="dh"><h2>Your choices</h2><button id="decclose">Close</button></div>
+<p class="dim">Copy this, then either paste it to Claude, or save it as a text file named <b>decisions.txt</b> in the
+Downloads\input folder on the PC. The next refresh applies it everywhere.</p>
+<textarea id="dectext" readonly rows="8" style="width:100%;font:13px monospace;background:var(--bg);color:var(--chalk);border:1px solid var(--line)"></textarea>
+<div class="btns"><button id="deccopy">Copy</button><button id="decclear">Clear my choices</button></div></section>
 </main>
 <script>window.FL_URL="https://raw.githubusercontent.com/Palaniappanst/family-ledger-data/main/murali.enc";</script>
 <script>
@@ -360,6 +372,33 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
  $('as-k').innerHTML=xTile(inr(tot),'Total assets',`${A.length} items`)+xGroup(A.map(a=>['','','',+a.value||0,a.type]),r=>r[4]).map(([t,v])=>xTile(inr(v),t,'')).join('');
  $('as-l').innerHTML='<table>'+A.map(a=>`<tr><td>${esc(a.type)}</td><td class="w">${esc(a.name||'')}</td><td class="n">${inr(+a.value||0)}</td></tr>`).join('')+'</table>'})();
 
+
+// ---------------- decision pending: pick a tag, send the choices back to the PC
+(()=>{const P=D.pend||{cbe:[],thot:[],spend:[]};
+ const OPT={out:[['TAKEN','Taken by Palani / family use'],['VENDOR','CBE house expense'],['THOTTAM','Ammapatti thottam'],['IGNORE','Came back / not real spending']],
+  in:[['CONTRIB:Palani','Put in by Palani'],['CONTRIB:Santhiya','Put in by Santhiya'],['CONTRIB:Sithambaram','Put in by Sithambaram'],
+   ['CONTRIB:Visalakshi','Put in by Visalakshi'],['MURALI_IN',"Murali's money"],['IGNORE','Not project money']],
+  thot:[['yes','Yes, Ammapatti thottam'],['no','No, not thottam']],spend:(D.cats||[]).map(c=>[c,c]).concat([['Other payments','Leave as other']])};
+ let dec={};try{dec=JSON.parse(localStorage.getItem('fl_dec')||'{}')}catch(e){}
+ const save=()=>{try{localStorage.setItem('fl_dec',JSON.stringify(dec))}catch(e){}bar()};
+ const sel=(key,opts)=>`<select data-dk="${esc(key)}" aria-label="Choose a tag"><option value="">Decision pending: choose…</option>${opts.map(([v,l])=>`<option value="${esc(v)}"${dec[key]===v?' selected':''}>${esc(l)}</option>`).join('')}</select>`;
+ const box=(id,title,note,rows)=>{const el=$(id);if(!rows.length||!el)return;el.hidden=false;
+  el.innerHTML=`<h2>Decision pending <small>${rows.length}</small></h2><p class="dim">${note}</p>`+rows.join('')};
+ box('pd-cbe','',"Money in or out of Canara/IOB that the rules can't place. Pick what each one was.",
+  P.cbe.map(([k,d,a,v,t,io])=>`<div class="row${dec[k]?' done':''}"><span>${fd(d)} · ${esc(a)}<br><span class="dim small">${esc(t)}</span></span><span class="n">${io==='in'?'+':''}${inr(v)}</span>${sel(k,OPT[io])}</div>`));
+ box('pd-thot','','Payees paid for the thottam at least once, whose other payments carry no thottam tag.',
+  P.thot.map(([n,c,v,t])=>`<div class="row${dec['thot:'+n]?' done':''}"><span>${esc(n)} · ${c} payments<br><span class="dim small">${esc(t)}</span></span><span class="n">${inr(v)}</span>${sel('thot:'+n,OPT.thot)}</div>`));
+ box('pd-spend','','Payees no rule recognises, largest first. Your choice applies to all their payments.',
+  P.spend.map(([n,c,v,t])=>`<div class="row${dec['payee:'+n]?' done':''}"><span>${esc(n)} · ${c} payments<br><span class="dim small">${esc(t)}</span></span><span class="n">${inr(v)}</span>${sel('payee:'+n,OPT.spend)}</div>`));
+ document.addEventListener('change',e=>{const s=e.target.closest('select[data-dk]');if(!s)return;
+  if(s.value)dec[s.dataset.dk]=s.value;else delete dec[s.dataset.dk];s.closest('.row').classList.toggle('done',!!s.value);save()});
+ const txt=()=>'# Family ledger decisions '+new Date().toLocaleString('en-GB')+'\n'+Object.entries(dec).map(([k,v])=>k+'\t'+v).join('\n')+'\n';
+ function bar(){const n=Object.keys(dec).length;$('decbar').hidden=!n;$('decn').textContent=`${n} choice${n===1?'':'s'} made`}
+ $('decsend').onclick=()=>{$('dectext').value=txt();$('decout').hidden=false;$('decout').scrollIntoView()};
+ $('decclose').onclick=()=>{$('decout').hidden=true};
+ $('deccopy').onclick=()=>{const t=$('dectext');navigator.clipboard&&navigator.clipboard.writeText(t.value).then(()=>{$('deccopy').textContent='Copied'},()=>{t.select()})||t.select()};
+ $('decclear').onclick=()=>{dec={};save();document.querySelectorAll('select[data-dk]').forEach(s=>{s.value='';s.closest('.row').classList.remove('done')});$('decout').hidden=true};
+ bar()})();
 let startTab='cbe';try{startTab=localStorage.getItem('tab')||'cbe'}catch(e){}
 showTab(['cbe','thot'].includes(startTab)?startTab:'cbe');
 </script></body></html>
