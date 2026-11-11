@@ -129,7 +129,7 @@ summary{cursor:pointer;font-size:22px;font-weight:700}
 <div class="tab" id="t-thot" hidden><div class="kpis" id="th-k"></div><section class="pend" id="pd-thot" hidden></section>
 <div class="two"><section><h2>By payee</h2><div id="th-p"></div></section><section><h2>By month</h2><div id="th-m"></div></section></div>
 <section><h2>All thottam payments</h2><div class="wrap"><table class="cards" id="th-t"></table></div></section></div>
-<div class="tab" id="t-spend" hidden><div class="filters" style="margin-top:16px"><select id="sp-who" aria-label="Whose account"></select><select id="sp-mon" aria-label="Month"></select><input type="date" id="sp-day" aria-label="A specific day"><button id="sp-today" type="button">Today</button><button id="sp-clearday" type="button" hidden>All days</button></div><div class="kpis" id="sp-k"></div><section id="cc-sec"></section><section class="pend" id="pd-spend" hidden></section>
+<div class="tab" id="t-spend" hidden><div class="filters" style="margin-top:16px"><select id="sp-who" aria-label="Whose account"></select><select id="sp-mon" aria-label="Month"></select><input type="date" id="sp-day" aria-label="A specific day"><button id="sp-today" type="button">Today</button><button id="sp-clearday" type="button" hidden>All days</button></div><div class="kpis" id="sp-k"></div><section id="cc-sec"></section><section id="tr-sec"></section><section class="pend" id="pd-spend" hidden></section>
 <div class="two"><section><h2>By category</h2><div id="sp-c"></div></section><section><h2>Month by month</h2><div id="sp-m"></div></section></div>
 <section><h2 id="sp-th">Payments</h2><div class="wrap"><table class="cards" id="sp-t"></table></div></section></div>
 <div class="tab" id="t-loans" hidden><div class="kpis" id="ln-k"></div><div id="ln-s"></div></div>
@@ -370,6 +370,15 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
   sec.innerHTML=h;
   sec.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{w=b.dataset.w;k=null;draw()});
   sec.querySelectorAll('[data-c]').forEach(b=>{const go=()=>{k=k===b.dataset.c?null:b.dataset.c;draw()};b.onclick=go;b.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}}})};
+ draw()})();
+
+// ---------------- where account transfers went (bank alerts + phone SMS, by payee)
+(()=>{const T=D.transfers||[],sec=$('tr-sec');if(!sec||!T.length){if(sec)sec.innerHTML='';return}
+ let open=null;
+ const draw=()=>{sec.innerHTML=`<h2>Where account transfers went</h2><p class="dim">From bank alert mails and phone SMS, by payee - these are the SAME payments the Statements-based figures above already count; this just names who the money went to. Tap a name for its recent payments.</p>
+  <table>${T.map(g=>`<tr role="button" tabindex="0" data-p="${esc(g.name)}" style="cursor:pointer${g.name===open?';outline:2px solid var(--tape)':''}"><td class="w">${esc(g.name)} <span class="dim small">${g.n}x</span></td><td class="n">${inr(g.total)}</td></tr>`).join('')}</table>
+  ${open?(()=>{const g=T.find(x=>x.name===open);return `<h2>${esc(open)}: recent payments</h2><table>${g.recent.map(x=>`<tr><td class="d">${fd(x[0])}</td><td class="w">${esc(x[1]?'a/c ..'+x[1]:'')}</td><td class="n">${inr(x[2])}</td></tr>`).join('')}</table>`})():''}`;
+  sec.querySelectorAll('[data-p]').forEach(b=>{const go=()=>{open=open===b.dataset.p?null:b.dataset.p;draw()};b.onclick=go;b.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}}})};
  draw()})();
 
 // ---------------- 4 loans
