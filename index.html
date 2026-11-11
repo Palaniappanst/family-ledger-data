@@ -17,6 +17,7 @@ main{max-width:1180px;margin:0 auto;padding-block:28px 64px;padding-left:max(16p
 h1,h2,.kv b,.res,summary{font-family:'Barlow Condensed',sans-serif}
 h1{font-size:clamp(34px,6vw,54px);line-height:1.05;margin:0}
 h2{font-size:24px;margin:0 0 10px;font-weight:700}
+h3{font-size:17px;margin:20px 0 6px;font-weight:700;color:var(--dim)}
 .sub,.dim{color:var(--dim)} .sub{margin:6px 0 22px}
 section{background:var(--panel);border:1px solid var(--grid);padding:18px;margin-top:16px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--grid);border:1px solid var(--grid)}
@@ -92,7 +93,8 @@ summary{cursor:pointer;font-size:22px;font-weight:700}
 </style></head><body><main>
 <h1>CBE House ledger</h1>
 <p class="sub" id="sub"></p>
-<nav class="tabs" role="tablist" aria-label="Dashboards"><button role="tab" data-t="cbe">Coimbatore house</button><button role="tab" data-t="thot">Ammapatti thottam</button><button role="tab" hidden data-t="spend">Monthly expenses</button><button role="tab" hidden data-t="loans">Loans</button><button role="tab" hidden data-t="assets">Assets</button></nav>
+<nav class="tabs" role="tablist" aria-label="Dashboards"><button role="tab" hidden data-t="overview">Overview</button><button role="tab" data-t="cbe">Coimbatore house</button><button role="tab" data-t="thot">Ammapatti thottam</button><button role="tab" hidden data-t="spend">Monthly expenses</button><button role="tab" hidden data-t="loans">Loans</button><button role="tab" hidden data-t="assets">Assets</button></nav>
+<div class="tab" id="t-overview"><p class="dim" id="ov-sub" style="margin-top:0"></p><section><h2>Statement of Affairs</h2><div class="kpis" id="ov-k"></div></section><section><h2>Schedules</h2><div class="kpis" id="ov-s"></div></section><section id="ov-dec-sec"></section></div>
 <div class="tab" id="t-cbe">
 <div class="kpis" id="kpis"></div>
 <div class="kpis" id="thotbox"></div>
@@ -129,7 +131,7 @@ summary{cursor:pointer;font-size:22px;font-weight:700}
 <div class="tab" id="t-thot" hidden><div class="kpis" id="th-k"></div><section class="pend" id="pd-thot" hidden></section>
 <div class="two"><section><h2>By payee</h2><div id="th-p"></div></section><section><h2>By month</h2><div id="th-m"></div></section></div>
 <section><h2>All thottam payments</h2><div class="wrap"><table class="cards" id="th-t"></table></div></section></div>
-<div class="tab" id="t-spend" hidden><div class="filters" style="margin-top:16px"><select id="sp-who" aria-label="Whose account"></select><select id="sp-mon" aria-label="Month"></select><input type="date" id="sp-day" aria-label="A specific day"><button id="sp-today" type="button">Today</button><button id="sp-clearday" type="button" hidden>All days</button></div><div class="kpis" id="sp-k"></div><section id="rc-sec" hidden></section><section id="cc-sec"></section><section id="tr-sec"></section><section class="pend" id="pd-spend" hidden></section>
+<div class="tab" id="t-spend" hidden><div class="filters" style="margin-top:16px"><select id="sp-who" aria-label="Whose account"></select><select id="sp-mon" aria-label="Month"></select><input type="date" id="sp-day" aria-label="A specific day"><button id="sp-today" type="button">Today</button><button id="sp-clearday" type="button" hidden>All days</button></div><div class="kpis" id="sp-k"></div><details class="pend" open style="margin-top:16px"><summary>Bank alerts &amp; SMS (unaudited)</summary><p class="dim">Not yet checked against a bank statement - each note below says exactly which. Close this if you just want the verified figures above.</p><section id="rc-sec" hidden></section><section id="cc-sec"></section><section id="tr-sec"></section></details><section class="pend" id="pd-spend" hidden></section>
 <div class="two"><section><h2>By category</h2><div id="sp-c"></div></section><section><h2>Month by month</h2><div id="sp-m"></div></section></div>
 <section><h2 id="sp-th">Payments</h2><div class="wrap"><table class="cards" id="sp-t"></table></div></section></div>
 <div class="tab" id="t-loans" hidden><div class="kpis" id="ln-k"></div><div id="ln-s"></div></div>
@@ -309,8 +311,8 @@ document.addEventListener('keydown',e=>{const el=e.target.closest&&e.target.clos
 $('dclose').onclick=()=>{$('detail').hidden=true;$('kpis').scrollIntoView()};
 
 // ---------------- tabs
-const TABS=['cbe','thot','spend','loans','assets'];
-function showTab(t){if(!TABS.includes(t))t='cbe';
+const TABS=['overview','cbe','thot','spend','loans','assets'];
+function showTab(t){if(!TABS.includes(t))t='overview';
  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
  TABS.forEach(x=>$('t-'+x).hidden=x!==t);try{localStorage.setItem('tab',t)}catch(e){}}
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>showTab(b.dataset.t));
@@ -339,9 +341,15 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
   $('sp-clearday').hidden=!day;
   const base=S.filter(r=>(w==='All accounts'||r[1]===w));
   const R=day?base.filter(r=>r[0]===day):base.filter(r=>!m||r[0].startsWith(m));
-  const tot=R.reduce((s,r)=>s+r[3],0),nm=m?1:Math.max(1,new Set(base.map(r=>r[0].slice(0,7))).size);
+  // today's (or any day's) spend from bank alerts/SMS, for dates the bank statement hasn't reached
+  // yet. Folded into the headline total (so "today" actually shows today's spend, not just what a
+  // statement has caught up to), with its own share called out underneath - never double-counted,
+  // since recent_alerts() only ever returns dates the verified R above does not already cover.
+  const rc=(D.recent||[]).filter(r=>(w==='All accounts'||r[1]===w)&&(!day||r[0]===day)&&(day||!m||r[0].startsWith(m)));
+  const rtot=rc.reduce((s,r)=>s+r[3],0);
+  const tot=R.reduce((s,r)=>s+r[3],0)+rtot,nm=m?1:Math.max(1,new Set(base.map(r=>r[0].slice(0,7))).size);
   const cats=xGroup(R.map(r=>[r[0],r[1],r[4],r[3]]),r=>r[2]);
-  $('sp-k').innerHTML=xTile(inr(tot),day?fd(day):(m?xMon(m+'-01'):'All months'),`${R.length} payments`)+(m||day?'':xTile(inr(tot/nm),'Average a month',`${nm} months`))+
+  $('sp-k').innerHTML=xTile(inr(tot),day?fd(day):(m?xMon(m+'-01'):'All months'),rtot?`${R.length+rc.length} payments, ${inr(rtot)} of it provisional (not yet in a statement)`:`${R.length} payments`)+(m||day?'':xTile(inr(tot/nm),'Average a month',`${nm} months`))+
    cats.slice(0,3).map(([c,v])=>xTile(inr(v),c,'')).join('');
   $('sp-c').innerHTML=xBars(cats,'cat',cat);
   const bm={};base.forEach(r=>{const k=r[0].slice(0,7);bm[k]=(bm[k]||0)+r[3]});
@@ -349,13 +357,9 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
   const T=R.filter(r=>!cat||r[4]===cat).sort((a,b)=>b[3]-a[3]);
   $('sp-th').textContent=(cat||'All payments')+` (${T.length}), largest first`;
   $('sp-t').innerHTML=xCardRows(T.slice(0,300).map(r=>[r[0],r[1],r[2],r[3],r[4]+' · '+r[5]]));
-  // today's (or any day's) spend from bank alerts/SMS, for days the bank statement hasn't reached yet -
-  // provisional, so kept out of the verified tot/KPI above; disappears on its own once the real
-  // statement arrives and covers that date.
-  const rc=(D.recent||[]).filter(r=>(w==='All accounts'||r[1]===w)&&(!day||r[0]===day)&&(day||!m||r[0].startsWith(m)));
   const rcSec=$('rc-sec');
-  if(rc.length){rcSec.hidden=false;const rtot=rc.reduce((s,r)=>s+r[3],0);
-   rcSec.innerHTML=`<h2>${day?fd(day):'Recent'} - from bank alerts/SMS, not yet in a statement</h2><p class="dim">${inr(rtot)} so far, ${rc.length} payment${rc.length===1?'':'s'}. Provisional: once the bank statement reaches these dates this disappears and the verified figure above takes over.</p><table>${rc.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="w">${esc(r[2])}</td><td class="n">${inr(r[3])}</td></tr>`).join('')}</table>`}
+  if(rc.length){rcSec.hidden=false;
+   rcSec.innerHTML=`<h3>${day?fd(day):'Recent'} - from bank alerts/SMS, not yet in a statement</h3><p class="dim">${inr(rtot)} included above, ${rc.length} payment${rc.length===1?'':'s'}. Provisional: once the bank statement reaches these dates this list empties and the verified figure folds it in instead.</p><table>${rc.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="w">${esc(r[2])}</td><td class="n">${inr(r[3])}</td></tr>`).join('')}</table>`}
   else rcSec.hidden=true;}
  $('sp-who').onchange=$('sp-mon').onchange=$('sp-day').onchange=draw;
  $('sp-today').onclick=()=>{const d=new Date(),pad=n=>String(n).padStart(2,'0');$('sp-day').value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;draw()};
@@ -367,7 +371,7 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
 (()=>{const C=D.cards||{},sec=$('cc-sec');if(!sec)return;const who=['Palani','Santhiya'].concat(Object.keys(C).filter(x=>x!=='Palani'&&x!=='Santhiya'));
  let w=C.Palani?'Palani':'Santhiya',k=null;const mon=m=>new Date(m+'-01T00:00').toLocaleDateString('en-GB',{month:'short',year:'numeric'});
  const draw=()=>{const cards=C[w]||{},ks=Object.keys(cards).sort((a,b)=>cards[b].total-cards[a].total);
-  let h='<h2>Credit cards</h2><p class="dim">From the bank alert mails (card spends only). Tap a card for its summary.</p><div class="filters">'+
+  let h='<h3>Credit cards</h3><p class="dim">From the bank alert mails (card spends only). Tap a card for its summary.</p><div class="filters">'+
    who.map(x=>`<button class="${x===w?'on':''}" data-w="${esc(x)}" style="padding:8px 14px">${esc(x)}</button>`).join('')+'</div>'+(ks.length?'':'<p class="dim">No card alerts reach any mailbox for '+esc(w)+' yet. The HDFC card statements for Palani arrive locked, so add his card alert emails to one of the four mailboxes to see them here.</p>')+'<div class="kpis">'+
    ks.map(c=>`<div class="kv" role="button" tabindex="0" data-c="${c}" style="cursor:pointer;${c===k?'outline:2px solid var(--tape)':''}"><b>${inr(cards[c].total)}</b>HDFC card ending ${c}<br><span>${cards[c].n} spends, tap for summary</span></div>`).join('')+'</div>';
   if(k&&cards[k]){const c=cards[k],ms=Object.entries(c.months),avg=ms.length?Math.round(c.total/ms.length):0;
@@ -383,7 +387,7 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
 // ---------------- where account transfers went (bank alerts + phone SMS, by payee)
 (()=>{const T=D.transfers||[],sec=$('tr-sec');if(!sec||!T.length){if(sec)sec.innerHTML='';return}
  let open=null;
- const draw=()=>{sec.innerHTML=`<h2>Where account transfers went</h2><p class="dim">From bank alert mails and phone SMS, by payee - these are the SAME payments the Statements-based figures above already count; this just names who the money went to. Tap a name for its recent payments.</p>
+ const draw=()=>{sec.innerHTML=`<h3>Where account transfers went</h3><p class="dim">From bank alert mails and phone SMS, by payee - these are the SAME payments the Statements-based figures above already count; this just names who the money went to. Tap a name for its recent payments.</p>
   <table>${T.map(g=>`<tr role="button" tabindex="0" data-p="${esc(g.name)}" style="cursor:pointer${g.name===open?';outline:2px solid var(--tape)':''}"><td class="w">${esc(g.name)} <span class="dim small">${g.n}x</span></td><td class="n">${inr(g.total)}</td></tr>`).join('')}</table>
   ${open?(()=>{const g=T.find(x=>x.name===open);return `<h2>${esc(open)}: recent payments</h2><table>${g.recent.map(x=>`<tr><td class="d">${fd(x[0])}</td><td class="w">${esc(x[1]?'a/c ..'+x[1]:'')}</td><td class="n">${inr(x[2])}</td></tr>`).join('')}</table>`})():''}`;
   sec.querySelectorAll('[data-p]').forEach(b=>{const go=()=>{open=open===b.dataset.p?null:b.dataset.p;draw()};b.onclick=go;b.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}}})};
@@ -448,6 +452,33 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
  $('deccopy').onclick=()=>{const t=$('dectext');navigator.clipboard&&navigator.clipboard.writeText(t.value).then(()=>{$('deccopy').textContent='Copied'},()=>{t.select()})||t.select()};
  $('decclear').onclick=()=>{dec={};save();document.querySelectorAll('select[data-dk]').forEach(s=>{s.value='';s.closest('.row').classList.remove('done')});$('decout').hidden=true};
  bar()})();
+
+// ---------------- 0 overview: Statement of Affairs - the one-page summary, like a CA would open a file with
+(()=>{const ok=id=>document.getElementById(id);if(!ok('ov-k'))return;
+ const FAM=['Palani','Santhiya','Sithambaram','Visalakshi'],famSum=FAM.reduce((s,p)=>s+(D.contrib[p]||0),0);
+ const projCost=D.loan_bank+famSum+(D.contrib.Murali||0);
+ const VEND=['Paid to Murali (Jothi)','Other vendors'],paidCBE=D.tx.filter(t=>VEND.includes(t.o)).reduce((s,t)=>s+t.v,0);
+ const stillOwed=D.contract-paidCBE;
+ const net=D.A1-D.B1; // taken by family minus put in by family, per bank
+ const decN=(D.pend?(D.pend.cbe.length+D.pend.thot.length+D.pend.spend.length):0);
+ const decV=(D.pend?D.pend.cbe.reduce((s,r)=>s+r[3],0)+D.pend.thot.reduce((s,r)=>s+r[2],0):0);
+ const hdfcOwed=(D.loans&&D.loans.hdfc)?D.loans.hdfc.reduce((s,x)=>s+x.outstanding,0):0;
+ const assetsTot=(D.assets||[]).reduce((s,a)=>s+(+a.value||0),0);
+ const thotTot=D.thot_by?Object.values(D.thot_by).reduce((a,b)=>a+b,0):0;
+ const go=(id,v,l,s)=>`<div class="kv click" data-go="${id}" tabindex="0" role="button"><b>${v}</b>${esc(l)}<br><span>${esc(s||'')}</span></div>`;
+ ok('ov-sub').textContent=`As of ${fd(D.latest)}. Every figure below is from the bank statements unless marked otherwise. Tap any figure to open its full schedule.`;
+ ok('ov-k').innerHTML=
+  go('cbe',inr(Math.abs(net)),net>=0?'Taken more than put in (per bank)':'Put in more than taken (per bank)','Coimbatore house - see Result 1/2 for the final, decided figure')+
+  go('cbe',inr(stillOwed),'Still to pay Murali',`of ${inr(D.contract)} agreed, ${inr(paidCBE)} paid so far`)+
+  go('spend',decN?`${decN}`:'0','Decisions awaiting your input',decN?`${inr(decV)} not yet classified - see Monthly expenses, Coimbatore house and Ammapatti thottam`:'Nothing pending right now');
+ ok('ov-s').innerHTML=
+  go('cbe',inr(projCost),'Project cost so far','Schedule: Coimbatore house')+
+  go('loans',inr(hdfcOwed),'HDFC loans still owed (3, estimate)','Schedule of Loans')+
+  go('assets',inr(assetsTot),'Total assets (valued items)','Schedule of Assets - some items still need a value')+
+  go('thot',inr(thotTot),'Ammapatti thottam so far','tracking only, not part of the CBE house cost');
+ ok('ov-k').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>showTab(b.dataset.go));
+ ok('ov-s').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>showTab(b.dataset.go))})();
+
 let startTab='cbe';try{startTab=localStorage.getItem('tab')||'cbe'}catch(e){}
 showTab(['cbe','thot'].includes(startTab)?startTab:'cbe');
 </script></body></html>
