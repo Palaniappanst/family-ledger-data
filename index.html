@@ -129,7 +129,7 @@ summary{cursor:pointer;font-size:22px;font-weight:700}
 <div class="tab" id="t-thot" hidden><div class="kpis" id="th-k"></div><section class="pend" id="pd-thot" hidden></section>
 <div class="two"><section><h2>By payee</h2><div id="th-p"></div></section><section><h2>By month</h2><div id="th-m"></div></section></div>
 <section><h2>All thottam payments</h2><div class="wrap"><table class="cards" id="th-t"></table></div></section></div>
-<div class="tab" id="t-spend" hidden><div class="filters" style="margin-top:16px"><select id="sp-who" aria-label="Whose account"></select><select id="sp-mon" aria-label="Month"></select></div><div class="kpis" id="sp-k"></div><section class="pend" id="pd-spend" hidden></section>
+<div class="tab" id="t-spend" hidden><div class="filters" style="margin-top:16px"><select id="sp-who" aria-label="Whose account"></select><select id="sp-mon" aria-label="Month"></select></div><div class="kpis" id="sp-k"></div><section id="cc-sec"></section><section class="pend" id="pd-spend" hidden></section>
 <div class="two"><section><h2>By category</h2><div id="sp-c"></div></section><section><h2>Month by month</h2><div id="sp-m"></div></section></div>
 <section><h2 id="sp-th">Payments</h2><div class="wrap"><table class="cards" id="sp-t"></table></div></section></div>
 <div class="tab" id="t-loans" hidden><div class="kpis" id="ln-k"></div><div id="ln-s"></div></div>
@@ -350,6 +350,23 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
   $('sp-t').innerHTML=xCardRows(T.slice(0,300).map(r=>[r[0],r[1],r[2],r[3],r[4]+' · '+r[5]]))}
  $('sp-who').onchange=$('sp-mon').onchange=draw;
  $('sp-c').onclick=e=>{const b=e.target.closest('[data-cat]');if(b){cat=cat===b.dataset.cat?'':b.dataset.cat;draw()}};
+ draw()})();
+
+// ---------------- credit cards: pick a person, then a card, for its summary
+(()=>{const C=D.cards||{},sec=$('cc-sec');if(!sec)return;const who=['Palani','Santhiya'].concat(Object.keys(C).filter(x=>x!=='Palani'&&x!=='Santhiya'));
+ let w=C.Palani?'Palani':'Santhiya',k=null;const mon=m=>new Date(m+'-01T00:00').toLocaleDateString('en-GB',{month:'short',year:'numeric'});
+ const draw=()=>{const cards=C[w]||{},ks=Object.keys(cards).sort((a,b)=>cards[b].total-cards[a].total);
+  let h='<h2>Credit cards</h2><p class="dim">From the bank alert mails (card spends only). Tap a card for its summary.</p><div class="filters">'+
+   who.map(x=>`<button class="${x===w?'on':''}" data-w="${esc(x)}" style="padding:8px 14px">${esc(x)}</button>`).join('')+'</div>'+(ks.length?'':'<p class="dim">No card alerts reach any mailbox for '+esc(w)+' yet. The HDFC card statements for Palani arrive locked, so add his card alert emails to one of the four mailboxes to see them here.</p>')+'<div class="kpis">'+
+   ks.map(c=>`<div class="kv" role="button" tabindex="0" data-c="${c}" style="cursor:pointer;${c===k?'outline:2px solid var(--tape)':''}"><b>${inr(cards[c].total)}</b>HDFC card ending ${c}<br><span>${cards[c].n} spends, tap for summary</span></div>`).join('')+'</div>';
+  if(k&&cards[k]){const c=cards[k],ms=Object.entries(c.months),avg=ms.length?Math.round(c.total/ms.length):0;
+   h+=`<section style="margin-top:12px"><h2>Card ending ${k}: summary</h2><div class="kpis">${xTile(inr(c.total),'Total spent',c.n+' spends')}${xTile(inr(avg),'Average a month',ms.length+' months')}</div>
+   <div class="two"><div><h2>Month by month</h2><table>${ms.slice().reverse().map(([m,v])=>`<tr><td>${mon(m)}</td><td class="n">${inr(v)}</td></tr>`).join('')}</table></div>
+   <div><h2>Where it went</h2><table>${c.shops.map(x=>`<tr><td class="w">${esc(x[0])} <span class="dim small">${x[1]}x</span></td><td class="n">${inr(x[2])}</td></tr>`).join('')}</table></div></div>
+   <h2>Latest spends</h2><table>${c.recent.map(x=>`<tr><td class="d">${fd(x[0])}</td><td class="w">${esc(x[1])}</td><td class="n">${inr(x[2])}</td></tr>`).join('')}</table></section>`}
+  sec.innerHTML=h;
+  sec.querySelectorAll('[data-w]').forEach(b=>b.onclick=()=>{w=b.dataset.w;k=null;draw()});
+  sec.querySelectorAll('[data-c]').forEach(b=>{const go=()=>{k=k===b.dataset.c?null:b.dataset.c;draw()};b.onclick=go;b.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}}})};
  draw()})();
 
 // ---------------- 4 loans
