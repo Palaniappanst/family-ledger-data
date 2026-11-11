@@ -42,7 +42,7 @@ section{background:var(--panel);border:1px solid var(--grid);padding:18px;margin
 .owe{color:var(--tape)} .ok{color:var(--ok)}
 .eqline{font-variant-numeric:tabular-nums;color:var(--dim)}
 .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-button,select,input[type=search]{font:inherit;color:var(--chalk);background:var(--panel2);border:1px solid var(--line);padding:6px 12px}
+button,select,input[type=search],input[type=date]{font:inherit;color:var(--chalk);background:var(--panel2);border:1px solid var(--line);padding:6px 12px}
 button{cursor:pointer} button:hover{border-color:var(--chalk)}
 button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible,path:focus-visible,rect:focus-visible{outline:2px solid var(--tape);outline-offset:2px}
 .picks{max-height:360px;overflow:auto;border:1px solid var(--grid)}
@@ -129,7 +129,7 @@ summary{cursor:pointer;font-size:22px;font-weight:700}
 <div class="tab" id="t-thot" hidden><div class="kpis" id="th-k"></div><section class="pend" id="pd-thot" hidden></section>
 <div class="two"><section><h2>By payee</h2><div id="th-p"></div></section><section><h2>By month</h2><div id="th-m"></div></section></div>
 <section><h2>All thottam payments</h2><div class="wrap"><table class="cards" id="th-t"></table></div></section></div>
-<div class="tab" id="t-spend" hidden><div class="filters" style="margin-top:16px"><select id="sp-who" aria-label="Whose account"></select><select id="sp-mon" aria-label="Month"></select></div><div class="kpis" id="sp-k"></div><section id="cc-sec"></section><section class="pend" id="pd-spend" hidden></section>
+<div class="tab" id="t-spend" hidden><div class="filters" style="margin-top:16px"><select id="sp-who" aria-label="Whose account"></select><select id="sp-mon" aria-label="Month"></select><input type="date" id="sp-day" aria-label="A specific day"><button id="sp-today" type="button">Today</button><button id="sp-clearday" type="button" hidden>All days</button></div><div class="kpis" id="sp-k"></div><section id="cc-sec"></section><section class="pend" id="pd-spend" hidden></section>
 <div class="two"><section><h2>By category</h2><div id="sp-c"></div></section><section><h2>Month by month</h2><div id="sp-m"></div></section></div>
 <section><h2 id="sp-th">Payments</h2><div class="wrap"><table class="cards" id="sp-t"></table></div></section></div>
 <div class="tab" id="t-loans" hidden><div class="kpis" id="ln-k"></div><div id="ln-s"></div></div>
@@ -335,11 +335,13 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
  $('sp-who').innerHTML=who.map(w=>`<option>${esc(w)}</option>`).join('');
  $('sp-mon').innerHTML='<option value="">All months</option>'+months.map(m=>`<option value="${m}">${xMon(m+'-01')}</option>`).join('');
  let cat='';
- function draw(){const w=$('sp-who').value,m=$('sp-mon').value;
-  const base=S.filter(r=>(w==='All accounts'||r[1]===w));const R=base.filter(r=>!m||r[0].startsWith(m));
+ function draw(){const w=$('sp-who').value,m=$('sp-mon').value,day=$('sp-day').value;
+  $('sp-clearday').hidden=!day;
+  const base=S.filter(r=>(w==='All accounts'||r[1]===w));
+  const R=day?base.filter(r=>r[0]===day):base.filter(r=>!m||r[0].startsWith(m));
   const tot=R.reduce((s,r)=>s+r[3],0),nm=m?1:Math.max(1,new Set(base.map(r=>r[0].slice(0,7))).size);
   const cats=xGroup(R.map(r=>[r[0],r[1],r[4],r[3]]),r=>r[2]);
-  $('sp-k').innerHTML=xTile(inr(tot),m?xMon(m+'-01'):'All months',`${R.length} payments`)+(m?'':xTile(inr(tot/nm),'Average a month',`${nm} months`))+
+  $('sp-k').innerHTML=xTile(inr(tot),day?fd(day):(m?xMon(m+'-01'):'All months'),`${R.length} payments`)+(m||day?'':xTile(inr(tot/nm),'Average a month',`${nm} months`))+
    cats.slice(0,3).map(([c,v])=>xTile(inr(v),c,'')).join('');
   $('sp-c').innerHTML=xBars(cats,'cat',cat);
   const bm={};base.forEach(r=>{const k=r[0].slice(0,7);bm[k]=(bm[k]||0)+r[3]});
@@ -347,7 +349,9 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
   const T=R.filter(r=>!cat||r[4]===cat).sort((a,b)=>b[3]-a[3]);
   $('sp-th').textContent=(cat||'All payments')+` (${T.length}), largest first`;
   $('sp-t').innerHTML=xCardRows(T.slice(0,300).map(r=>[r[0],r[1],r[2],r[3],r[4]+' · '+r[5]]))}
- $('sp-who').onchange=$('sp-mon').onchange=draw;
+ $('sp-who').onchange=$('sp-mon').onchange=$('sp-day').onchange=draw;
+ $('sp-today').onclick=()=>{const d=new Date(),pad=n=>String(n).padStart(2,'0');$('sp-day').value=`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;draw()};
+ $('sp-clearday').onclick=()=>{$('sp-day').value='';draw()};
  $('sp-c').onclick=e=>{const b=e.target.closest('[data-cat]');if(b){cat=cat===b.dataset.cat?'':b.dataset.cat;draw()}};
  draw()})();
 
