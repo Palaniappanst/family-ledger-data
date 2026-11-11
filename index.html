@@ -354,10 +354,13 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
  $('ln-k').innerHTML=xTile(inr(h.received),'Home loan taken (Canara)',`of ${inr(h.sanction)} sanctioned; ${inr(h.sanction-h.received)} still to come`)+
   xTile(inr(h.interest),'Home loan interest & charges paid','pre-EMI interest drawn from the account')+
   xTile(inr(gold),'Gold loan (Palani)','taken; repayments not in these statements')+
-  xTile(inr(jw),'IOB jewel loan paid','payoffs + monthly ₹15,000 (Visalakshi)');
+  xTile(inr(jw),'IOB jewel loan paid','payoffs + monthly ₹15,000 (Visalakshi)')+
+  xTile(inr((L.hdfc||[]).reduce((s,x)=>s+x.outstanding,0)),'HDFC loans outstanding (3 loans)','estimate from HDFC letters + EMIs paid');
  const sec=(t,note,rows,cols)=>`<section><h2>${esc(t)}</h2>${note?`<p class="dim">${note}</p>`:''}<div class="wrap"><table class="cards">${rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="w">${esc(r[2]||'')}</td><td class="n">${inr(r[1])}</td></tr>`).join('')}</table></div></section>`;
  let html=`<section><h2>Still owed</h2><p class="dim">Bank statements show money moving, not the loan balance. Outstanding today, as far as these statements show:</p><table>
  <tr><td>Canara home loan</td><td class="n">${inr(h.received)}</td><td class="dim small">principal not repaid yet (interest only so far)</td></tr>
+ ${(L.hdfc||[]).map(x=>`<tr><td>${esc(x.name)} <span class="dim small">${x.acct}</span></td><td class="n">${inr(x.outstanding)}</td><td class="dim small">estimate; sanctioned ${inr(x.sanction)}, EMI ${inr(x.emi)} at ${x.rate}%</td></tr>`).join('')}
+ ${(L.od||[]).map(x=>`<tr><td>${esc(x.name)}</td><td class="n">${inr(x.amount)}</td><td class="dim small">balance as on ${fd(x.date)}; the account is below zero</td></tr>`).join('')}
  <tr><td>Gold loan (Palani)</td><td class="n">${inr(gold)}</td><td class="dim small">assumed unpaid; tell Claude if repaid</td></tr>
  <tr><td>IOB jewel loan</td><td class="n">?</td><td class="dim small">needs the IOB loan balance</td></tr>
  ${Object.keys(L.emi).map(k=>`<tr><td>${esc(k)}</td><td class="n">?</td><td class="dim small">EMI loan, needs the lender's balance</td></tr>`).join('')}</table></section>`;
@@ -370,7 +373,7 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
  if(!A.length){$('as-k').innerHTML=xTile('—','Total assets','no values yet');
   $('as-l').innerHTML='<p class="dim">Land, house, gold, diamond, equity and mutual funds are not in the bank statements. Send Claude each item with its approximate value and it will appear here, grouped by type.</p>';return}
  $('as-k').innerHTML=xTile(inr(tot),'Total assets',`${A.length} items`)+xGroup(A.map(a=>['','','',+a.value||0,a.type]),r=>r[4]).map(([t,v])=>xTile(inr(v),t,'')).join('');
- $('as-l').innerHTML='<table>'+A.map(a=>`<tr><td>${esc(a.type)}</td><td class="w">${esc(a.name||'')}</td><td class="n">${inr(+a.value||0)}</td></tr>`).join('')+'</table>'})();
+ $('as-l').innerHTML='<table>'+A.map(a=>`<tr><td>${esc(a.type)}</td><td class="w">${esc(a.name||'')}</td><td class="n">${a.value==null?'<span class="dim">value needed</span>':inr(+a.value||0)}</td></tr>`).join('')+'</table>'})();
 
 
 // ---------------- decision pending: pick a tag, send the choices back to the PC
