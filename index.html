@@ -7,6 +7,10 @@
 /* site-ledger look: blueprint navy, chalk type, cyan for decisions (no yellow/red, Palani's rule), teal for matched (single dark theme by choice) */
 :root{--bg:#10233a;--panel:#163050;--panel2:#1b3a60;--grid:#24476d;--chalk:#e9f1f7;--dim:#9db4c8;--tape:#5ec8e5;--ok:#4fb8a0;--line:#3e6a96;--ink:#10233a;--tipbg:#0b1828;color-scheme:dark}
 *{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden;overscroll-behavior-x:none;touch-action:pan-y}
+section,.tab,main{min-width:0;max-width:100%}
+section{overflow-x:auto}
+table{max-width:100%}td,th{overflow-wrap:anywhere}
 body{margin:0;background:var(--bg);color:var(--chalk);font:16px/1.5 'Source Sans 3',system-ui,sans-serif;
 background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:48px 48px;background-attachment:fixed}
 main{max-width:1180px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
