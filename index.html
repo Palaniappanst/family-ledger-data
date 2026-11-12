@@ -433,11 +433,11 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
   xTile(inr(h.interest),'Home loan interest & charges paid','pre-EMI interest drawn from the account')+
   xTile(inr(gold),'Gold loan (Palani)','taken; repayments not in these statements')+
   xTile(inr(jw),'IOB jewel loan paid','payoffs + monthly ₹15,000 (Visalakshi)')+
-  xTile(inr((L.hdfc||[]).reduce((s,x)=>s+x.outstanding,0)),'HDFC loans outstanding (3 loans)','estimate from HDFC letters + EMIs paid');
+  xTile(inr((L.hdfc||[]).reduce((s,x)=>s+x.outstanding,0)),'HDFC loans outstanding (3 loans)',(L.hdfc||[]).every(x=>!/^estimate/.test(x.src||'estimate'))?'per HDFC quarterly loan summaries + EMIs paid since':'partly estimated from EMIs paid');
  const sec=(t,note,rows,cols)=>`<details class="fold"><summary>${esc(t)}</summary>${note?`<p class="dim">${note}</p>`:''}<div class="wrap"><table class="cards">${rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="w">${esc(r[2]||'')}</td><td class="n">${inr(r[1])}</td></tr>`).join('')}</table></div></details>`;
  let html=`<section><h2>Still owed</h2><p class="dim">Bank statements show money moving, not the loan balance. Outstanding today, as far as these statements show:</p><table>
  <tr><td>Canara home loan</td><td class="n">${inr(h.received)}</td><td class="dim small">principal not repaid yet (interest only so far)</td></tr>
- ${(L.hdfc||[]).map(x=>`<tr><td>${esc(x.name)} <span class="dim small">${x.acct}</span></td><td class="n">${inr(x.outstanding)}</td><td class="dim small">estimate; sanctioned ${inr(x.sanction)}, EMI ${inr(x.emi)} at ${x.rate}%</td></tr>`).join('')}
+ ${(L.hdfc||[]).map(x=>`<tr><td>${esc(x.name)} <span class="dim small">${x.acct}</span></td><td class="n">${inr(x.outstanding)}</td><td class="dim small">${esc(x.src||'estimate')}; sanctioned ${inr(x.sanction)}, EMI ${inr(x.emi)} at ${x.rate}%</td></tr>`).join('')}
  ${(L.od||[]).map(x=>`<tr><td>${esc(x.name)}</td><td class="n">${inr(x.amount)}</td><td class="dim small">balance as on ${fd(x.date)}; the account is below zero</td></tr>`).join('')}
  <tr><td>Gold loan (Palani)</td><td class="n">${inr(gold)}</td><td class="dim small">assumed unpaid; tell Claude if repaid</td></tr>
  <tr><td>IOB jewel loan</td><td class="n">?</td><td class="dim small">needs the IOB loan balance</td></tr>
@@ -513,7 +513,7 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
  ok('ov-cat').innerHTML=inMon.length?xBars(xGroup(inMon.map(r=>[r[0],r[1],r[4],r[3]]),r=>r[2]).slice(0,6)):'<p class="dim">No payments read for this month yet.</p>';
  const feed=all.slice().sort((x,y)=>x[0]<y[0]?1:x[0]>y[0]?-1:y[3]-x[3]).slice(0,8);
  ok('ov-feed').innerHTML=feed.map(r=>`<div class="frow"><div><b>${esc(r[2])}</b><small>${fd(r[0])}, ${esc(r[1])}, ${esc(r[4])}</small></div><span>${inr(r[3])}</span></div>`).join('')||'<p class="dim">Nothing yet.</p>';
- ok('ov-sub').textContent=`Bank statements read up to ${fd(D.latest)}. Later days come from bank alerts and SMS until the next statement arrives. We owe = Canara home loan received + HDFC loans (estimate) + overdraft + gold loan.`;
+ ok('ov-sub').textContent=`Bank statements read up to ${fd(D.latest)}. Later days come from bank alerts and SMS until the next statement arrives. We owe = Canara home loan received + HDFC loans (per HDFC loan summaries) + overdraft + gold loan.`;
  document.querySelectorAll('#t-overview [data-go]').forEach(b=>{const f=()=>showTab(b.dataset.go);b.onclick=f;b.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();f()}}})})();
 
 let startTab='cbe';try{startTab=localStorage.getItem('tab')||'cbe'}catch(e){}
