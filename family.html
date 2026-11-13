@@ -59,6 +59,7 @@ details.li-d>summary.li{border-top:0}details.li-d[open] .chev{transform:rotate(4
 .xchip{display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:#fff;border:0;border-radius:12px;padding:8px 14px;font-weight:600;font-size:13px;margin-bottom:12px}
 .day{font-size:12px;font-weight:700;color:var(--dim);letter-spacing:.6px;text-transform:uppercase;padding:14px 20px 4px}
 .tx .li{grid-template-columns:38px minmax(0,1fr) auto;padding:12px 20px}.tx .ic{width:38px;height:38px}
+select.xc{font:inherit;color:inherit;background:none;border:0;border-bottom:1px dashed currentColor;padding:2px 0;max-width:62vw;min-height:24px}
 .more{display:block;width:100%;border:0;background:none;padding:16px;color:var(--accent);font-weight:700;border-top:1px solid var(--line)}
 .pend{padding:6px 20px 14px}.pend .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:12px 0;border-top:1px solid var(--line);font-size:14px}
 .pend .row:first-of-type{border-top:0}.pend .row select{grid-column:1/-1;width:100%;border:1px solid var(--line);border-radius:10px;padding:9px;font:inherit;background:var(--panel);color:var(--chalk)}
@@ -189,8 +190,10 @@ const thotIds=new Set(D.thot_ids||[]),T=[];
 // thottam comes from thot_rows (the thottam list), so the same payments are not taken twice from tx
 D.tx.forEach(t=>{if(thotIds.has(t.id))return;let c,inn=false;
  if(t.o)c=OCLS[t.o]||t.o;else{inn=true;c=t.s==='Canara home loan'?'Home loan received':/Gold loan/.test(t.s||'')?'Gold loan received':'Put into CBE House'}
- T.push({d:t.d,a:t.a,p:t.t,v:t.v,c,inn,n:t.mm||''})});
-(D.spend||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:r[4],n:r[5]||''}));
+ T.push({d:t.d,a:t.a,p:t.t,v:t.v,c,inn,n:t.mm||'',ck:t.k,co:inn?'in':'out'})});
+// ck/co (13.11.2026): the classification is a dropdown - a project row's choice is saved for that row,
+// a personal payment's choice for its payee (all its payments, now and later)
+(D.spend||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:r[4],n:r[5]||'',ck:'payee:'+r[2],co:'spend'}));
 (D.thot_rows||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'Ammapatti thottam',n:r[4]||''}));
 (D.recent||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:r[5]||'Not yet in a statement',n:'from bank alert / SMS',md:r[4]||'Bank'}));
 (D.income||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[4]||'Salary',v:r[2],c:'Salary',inn:true,n:r[3]||''}));
@@ -210,6 +213,16 @@ document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{if(b.dataset
 
 // ---------------- Transactions: filter by classification, month, search, or a figure tapped elsewhere
 const X={c:'',f:null,lim:150,md:''};  // md: '' | 'Bank' | 'Credit card' (13.11.2026, paid-by filter)
+// same choices as the decisions lists below (kept in step by hand); 'Other payments' = clear back to rules
+const XO={out:[['TAKEN','Taken by Palani / family use'],['VENDOR','CBE house expense'],['THOTTAM','Ammapatti thottam'],['IGNORE','Came back / not real spending']],
+ in:[['CONTRIB:Palani','Put in by Palani'],['CONTRIB:Santhiya','Put in by Santhiya'],['CONTRIB:Sithambaram','Put in by Sithambaram'],
+  ['CONTRIB:Visalakshi','Put in by Visalakshi'],['MURALI_IN',"Murali's money"],['IGNORE','Not project money']],
+ spend:(D.cats||[]).map(c=>[c,c]).concat([['CBE Project','Actually CBE house money'],['Ammapatti Thottam','Actually Ammapatti thottam']])};
+const xSel=t=>`<select class="xc" data-ck="${esc(t.ck)}" aria-label="Change classification of this payment"><option value="">${esc(t.c)}</option>`+
+ `<optgroup label="${t.co==='spend'?'Change for every payment to this payee':'Change this payment'}">`+
+ XO[t.co].map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('')+'</optgroup></select>';
+document.addEventListener('change',e=>{const s=e.target.closest('select[data-ck]');if(!s||!s.value)return;
+ window.addDec(s.dataset.ck,s.value);s.options[0].textContent='→ '+s.selectedOptions[0].textContent+' (press Send)';s.value=''});
 const openTx=(label,f,c,m)=>{X.f=f?{label,f}:null;X.c=c||'';$('x-m').value=m||'';$('x-q').value='';X.lim=150;drawTx();showTab('txn')};
 const months=[...new Set(T.map(t=>t.d.slice(0,7)))].sort().reverse();
 $('x-m').innerHTML='<option value="">All months</option>'+months.map(m=>`<option value="${m}">${xMon(m)}</option>`).join('');
@@ -228,7 +241,7 @@ function drawTx(){const q=$('x-q').value.toLowerCase(),m=$('x-m').value;
  $('x-chips').innerHTML=[['',[base.length]]].concat(order).map(([c,[n]])=>`<button aria-pressed="${X.c===c}" ${go(()=>{X.c=c;X.lim=150;drawTx()})}>${c?esc(c):'All'}<small>${c==='To decide'?decN+n:n}</small></button>`).join('');
  $('x-dec').hidden=X.c!=='To decide';
  let h='',last='';R.slice(0,X.lim).forEach(t=>{if(t.d!==last){h+=`<div class="day">${fd(t.d)}</div>`;last=t.d}
-  h+=`<div class="li">${ic(t.c)}<span><b>${esc(t.p)}</b><small>${esc(t.c)} · ${esc(t.a)}</small></span><span class="val${t.inn?' in':''}">${t.inn?'+':''}${inr(t.v)}</span></div>`});
+  h+=`<div class="li">${ic(t.c)}<span><b>${esc(t.p)}</b><small>${t.ck?xSel(t):esc(t.c)} · ${esc(t.a)}</small></span><span class="val${t.inn?' in':''}">${t.inn?'+':''}${inr(t.v)}</span></div>`});
  $('x-list').innerHTML=(h||`<p class="dim" style="padding:20px">${X.c==='To decide'?'Choose a tag for each item above.':'No transactions match.'}</p>`)+(R.length>X.lim?`<button class="more" ${go(()=>{X.lim+=300;drawTx()})}>Show more (${R.length-X.lim} left)</button>`:'');
  $('x-list').hidden=X.c==='To decide'&&!R.length}
 let qt;$('x-q').oninput=()=>{clearTimeout(qt);qt=setTimeout(()=>{X.lim=150;drawTx()},150)};$('x-m').onchange=()=>{X.lim=150;drawTx()};
