@@ -192,7 +192,7 @@ D.tx.forEach(t=>{if(thotIds.has(t.id))return;let c,inn=false;
  T.push({d:t.d,a:t.a,p:t.t,v:t.v,c,inn,n:t.mm||''})});
 (D.spend||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:r[4],n:r[5]||''}));
 (D.thot_rows||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'Ammapatti thottam',n:r[4]||''}));
-(D.recent||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'Not yet in a statement',n:'from bank alert / SMS',md:r[4]||'Bank'}));
+(D.recent||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:r[5]||'Not yet in a statement',n:'from bank alert / SMS',md:r[4]||'Bank'}));
 (D.income||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[4]||'Salary',v:r[2],c:'Salary',inn:true,n:r[3]||''}));
 T.sort((x,y)=>x.d<y.d?1:x.d>y.d?-1:y.v-x.v);
 
