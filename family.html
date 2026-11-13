@@ -328,9 +328,21 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
  const txt=()=>'# Family ledger decisions '+new Date().toLocaleString('en-GB')+'\n'+Object.entries(dec).map(([k,v])=>k+'\t'+v).join('\n')+'\n';
  function bar(){const n=Object.keys(dec).length;$('decbar').hidden=!n;$('decn').textContent=`${n} choice${n===1?'':'s'} made`}
  const online=window.AndroidBridge&&(()=>{try{return AndroidBridge.available()}catch(e){return false}})();
- $('decsend').onclick=()=>{if(online){try{AndroidBridge.pushDecisions(txt())}catch(e){}
-   $('decnote').textContent='Sent. It is picked up on the next check (within about 15 minutes). Keep this copy until you see it reflected.'}
-  $('dectext').value=txt();$('decout').hidden=false;$('decout').scrollIntoView()};
+ // laptop / web (13.11.2026, key-once): no Android bridge, so push the same decisions/<device>-<ts>.txt file to the
+ // private inbox repo with a key pasted once and kept only in this browser. The PC applies it on its next run.
+ const KEY='fl_ghkey',webPush=async t=>{let k='';try{k=localStorage.getItem(KEY)||''}catch(e){}
+  if(!k){k=(prompt('First time on this computer: paste the family key (Palani has it). It stays in this browser only.')||'').trim();if(!k)return 'no key - copy the text below and send it to Palani instead.'}
+  const ts=Date.now(),r=await fetch(`https://api.github.com/repos/Palaniappanst/family-ledger-sms/contents/decisions/web-${ts}.txt`,{method:'PUT',
+   headers:{Authorization:'Bearer '+k,Accept:'application/vnd.github+json'},
+   body:JSON.stringify({message:'decisions from web',content:btoa(unescape(encodeURIComponent(t)))})}).catch(()=>null);
+  if(r&&r.ok){try{localStorage.setItem(KEY,k)}catch(e){}return ''}
+  if(r&&(r.status===401||r.status===403||r.status===404)){try{localStorage.removeItem(KEY)}catch(e){}return 'that key did not work - press Send again to re-enter it.'}
+  return 'could not reach GitHub (offline?) - try Send again in a minute.'};
+ $('decsend').onclick=async()=>{const t=txt();$('dectext').value=t;$('decout').hidden=false;$('decout').scrollIntoView();
+  if(online){try{AndroidBridge.pushDecisions(t)}catch(e){}
+   $('decnote').textContent='Sent. It is picked up on the next check (within about 15 minutes). Keep this copy until you see it reflected.';return}
+  $('decnote').textContent='Sending…';const err=await webPush(t);
+  $('decnote').textContent=err?'Not sent: '+err:'Sent. It is picked up on the next check (within about 15 minutes); everyone sees it after that. Keep this copy until you see it reflected.'};
  $('decclose').onclick=()=>{$('decout').hidden=true};
  $('deccopy').onclick=()=>{const t=$('dectext');navigator.clipboard&&navigator.clipboard.writeText(t.value).then(()=>{$('deccopy').textContent='Copied'},()=>{t.select()})||t.select()};
  $('decclear').onclick=()=>{dec={};save();document.querySelectorAll('select[data-dk]').forEach(s=>{s.value='';s.closest('.row').classList.remove('done')});$('decout').hidden=true};
