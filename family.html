@@ -257,7 +257,6 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
  const now=new Date(),mon=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`,emiM=T.filter(t=>t.c==='EMI'&&t.d.startsWith(mon));
  $('l-emi').innerHTML=`<span>EMIs paid in ${xMon(mon)}: <b>${inr(sum(emiM,t=>t.v))}</b></span><span class="chev"></span>`;$('l-emi').setAttribute('data-i',GO.push(()=>openTx('EMIs, '+xMon(mon),null,'EMI',mon))-1);
  let r=li('bank','Canara home loan',`of ${inr(h.sanction)} sanctioned`,inr(h.received),h.sanction?Math.round(h.received*100/h.sanction)+'% received':'',()=>openTx('Home loan received',null,'Home loan received'));
- r+=li('bank','Home loan interest paid','pre-EMI interest and charges',inr(h.interest),'',()=>{const k=keyset(h.int_rows||[]);openTx('Home loan interest',t=>t.a==='Canara'&&k(t))});
  hdfc.forEach(x=>r+=li('bank',x.name,`EMI ${inr(x.emi)} at ${x.rate}%`,inr(x.outstanding),'of '+inr(x.sanction),()=>openTx(x.name+', EMIs of '+inr(x.emi),t=>t.c==='EMI'&&Math.round(t.v)===Math.round(x.emi))));  // HDFC EMI debits carry no loan number
  od.forEach(x=>r+=li('wallet',x.name,'overdrawn, as on '+fd(x.date),inr(x.amount),'',()=>openTx(x.name,t=>t.a===x.name.replace(/ overdraw*.*$/i,''))));
  if(gold)r+=li('gift','Gold loan (Palani)','assumed unpaid',inr(gold),'',()=>openTx('Gold loan',null,'Gold loan received'));
