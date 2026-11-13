@@ -186,15 +186,16 @@ const ic=k=>`<span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path 
 // one list of every transaction, each with its classification
 const OCLS={'Paid to Murali (Jothi)':'CBE House','Other vendors':'CBE House','Loan interest & charges':'Home loan interest','IOB jewel loan repayments':'EMI',
  'Palani taken':'Taken out (Palani)','Palani personal':'Household expenses','Awaiting decision':'To decide','Other withdrawals':'To decide','Thottam (Palani)':'Ammapatti thottam'};
-const thotIds=new Set(D.thot_ids||[]),T=[];
+const thotIds=new Set(D.thot_ids||[]),txIds=new Set(),T=[];
 // thottam comes from thot_rows (the thottam list), so the same payments are not taken twice from tx
-D.tx.forEach(t=>{if(thotIds.has(t.id))return;let c,inn=false;
+D.tx.forEach(t=>{if(thotIds.has(t.id))return;txIds.add(t.id);let c,inn=false;
  if(t.o)c=OCLS[t.o]||t.o;else{inn=true;c=t.s==='Income (gifts / other)'?'Income':t.s==='Canara home loan'?'Home loan received':/Gold loan/.test(t.s||'')?'Gold loan received':'Put into CBE House'}
  T.push({d:t.d,a:t.a,p:t.t,v:t.v,c,inn,n:t.mm||'',ck:t.k,co:inn?'in':'out'})});
 // ck/co (13.11.2026): the classification is a dropdown - a project row's choice is saved for that row,
 // a personal payment's choice for its payee (all its payments, now and later)
 (D.spend||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:r[4],n:r[5]||'',ck:'payee:'+r[2],co:'spend'}));
-(D.thot_rows||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'Ammapatti thottam',n:r[4]||''}));
+// 13.11.2026: a payee made thottam by your choice is also in tx (with its dropdown) - show it once
+(D.thot_rows||[]).forEach(r=>{if(!txIds.has(r[5]))T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'Ammapatti thottam',n:r[4]||''})});
 (D.recent||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:r[5]||'Not yet in a statement',n:'from bank alert / SMS',md:r[4]||'Bank',
  ck:r[2]==='Not named in alert'?'':'payee:'+r[2],co:'spend'}));
 (D.income||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[4]||'Salary',v:r[2],c:r[4]==='Lent money received back'?r[4]:'Salary',inn:true,n:r[3]||''}));
