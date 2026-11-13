@@ -120,6 +120,23 @@ main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 .hcard b{display:block;font:700 26px/1.15 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums;margin:2px 0}
 .hcard small{color:var(--dim);font-size:12px}
 .hcard:focus-visible,.hero .hsplit>div:focus-visible{outline:2px solid var(--tape);outline-offset:-2px}
+.chips{display:flex;gap:8px;overflow-x:auto;margin:16px 0 4px;padding-bottom:4px}
+.chips button{flex:none;font-family:inherit;font-size:14px;font-weight:600;padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--chalk);cursor:pointer}
+.chips button[aria-pressed=true]{background:var(--tape);color:var(--ink);border-color:var(--tape)}
+.alist{background:var(--panel);border:1px solid var(--grid);margin-top:12px}
+.alist>details{border-top:1px solid var(--grid)}.alist>details:first-child{border-top:0}
+.alist>details>summary{display:grid;grid-template-columns:44px 1fr auto 14px;gap:12px;align-items:center;padding:16px;cursor:pointer;list-style:none}
+.alist>details>summary::-webkit-details-marker{display:none}
+.alist .ic{width:44px;height:44px;border-radius:50%;background:var(--panel2);display:grid;place-items:center}
+.alist .ic svg{width:22px;height:22px;fill:none;stroke:var(--tape);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.alist summary b{display:block;font-size:17px;font-weight:600}.alist summary small{color:var(--dim);font-size:13px}
+.alist summary .v{text-align:right;font:700 20px/1.2 'Barlow Condensed',sans-serif;font-variant-numeric:tabular-nums}
+.alist summary .v small{display:block;font-family:inherit;font-size:12px;font-weight:500;color:var(--ok)}
+.alist .chev{width:9px;height:9px;border:solid var(--dim);border-width:0 2px 2px 0;transform:rotate(-45deg);transition:transform .2s}
+.alist details[open] .chev{transform:rotate(45deg)}
+.alist .items{padding:0 16px 12px 72px}.alist .items .frow b{font-size:14px}.alist .items .frow small{color:var(--dim);font-size:12px;display:block}
+.alist .items details.fold{margin-top:8px;padding:8px 12px}.alist .items details.fold>summary{font-size:14px}
+@media (max-width:420px){.alist .items{padding-left:16px}}
 .frow{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--grid)}
 .frow:first-child{border-top:0}.frow div{min-width:0}.frow b{display:block;font-weight:600;overflow-wrap:anywhere}
 .frow small{color:var(--dim);font-size:13px}.frow>span{font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -168,7 +185,7 @@ main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 <div class="two"><section><h2>By category</h2><div id="sp-c"></div></section><section><h2>Month by month</h2><div id="sp-m"></div></section></div>
 <details class="fold"><summary id="sp-th">Payments</summary><div class="wrap"><table class="cards" id="sp-t"></table></div></details></div>
 <div class="tab" id="t-loans" hidden><div class="kpis" id="ln-k"></div><div id="ln-s"></div></div>
-<div class="tab" id="t-assets" hidden><div class="kpis" id="as-k"></div><section><h2>Assets</h2><div id="as-l"></div></section></div>
+<div class="tab" id="t-assets" hidden><div class="hero" id="as-k"></div><div class="chips" id="as-c" role="group" aria-label="Filter assets"></div><div class="alist" id="as-l"></div></div>
 <div id="tip"></div>
 <div id="decbar" hidden><span id="decn"></span><button id="decsend">Send my choices</button></div>
 <section id="decout" hidden><div class="dh"><h2>Your choices</h2><button id="decclose">Close</button></div>
@@ -397,7 +414,10 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
   const rtot=rc.reduce((s,r)=>s+r[3],0);
   const tot=R.reduce((s,r)=>s+r[3],0)+rtot,nm=m?1:Math.max(1,new Set(base.map(r=>r[0].slice(0,7))).size);
   const cats=xGroup(R.map(r=>[r[0],r[1],r[4],r[3]]),r=>r[2]);
-  $('sp-k').innerHTML=xTile(inr(tot),day?fd(day):(m?xMon(m+'-01'):'All months'),rtot?`${R.length+rc.length} payments, ${inr(rtot)} of it provisional (not yet in a statement)`:`${R.length} payments`)+(m||day?'':xTile(inr(tot/nm),'Average a month',`${nm} months`))+
+  // salary income for the same month (user 13.11.2026): who filter maps the account to its owner
+  const IN=(D.income||[]).filter(r=>(w==='All accounts'||w.includes(r[1]))&&!day&&(!m||r[0].startsWith(m))),itot=IN.reduce((s,r)=>s+r[2],0);
+  $('sp-k').innerHTML=xTile(inr(tot),day?fd(day):(m?xMon(m+'-01'):'All months'),rtot?`${R.length+rc.length} payments, ${inr(rtot)} of it provisional (not yet in a statement)`:`${R.length} payments`)+
+   (IN.length?xTile(inr(itot),'Income',`${[...new Set(IN.map(r=>r[4]))].join(' + ')}; left after spend ${inr(itot-tot)}`):'')+(m||day?'':xTile(inr(tot/nm),'Average a month',`${nm} months`))+
    cats.slice(0,3).map(([c,v])=>xTile(inr(v),c,'')).join('');
   $('sp-c').innerHTML=xBars(cats,'cat',cat);
   const bm={};base.forEach(r=>{const k=r[0].slice(0,7);bm[k]=(bm[k]||0)+r[3]});
@@ -443,11 +463,11 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
 
 // ---------------- 4 loans
 (()=>{const L=D.loans,h=L.home,emiTot=Object.values(L.emi).reduce((s,r)=>s+r.reduce((a,x)=>a+x[1],0),0);
- const gold=L.gold.reduce((s,r)=>s+r[1],0),jw=L.jewel.reduce((s,r)=>s+r[1],0);
+ const gold=L.gold.reduce((s,r)=>s+r[1],0),jw=L.jewel.reduce((s,r)=>s+r[1],0),JL=L.jl||[];
  $('ln-k').innerHTML=xTile(inr(h.received),'Home loan taken (Canara)',`of ${inr(h.sanction)} sanctioned; ${inr(h.sanction-h.received)} still to come`)+
   xTile(inr(h.interest),'Home loan interest & charges paid','pre-EMI interest drawn from the account')+
   xTile(inr(gold),'Gold loan (Palani)','taken; repayments not in these statements')+
-  xTile(inr(jw),'IOB jewel loan paid','payoffs + monthly ₹15,000 (Visalakshi)')+
+  xTile(inr(JL.filter(l=>l.active).reduce((s,l)=>s+l.amt,0)),'IOB jewel loans (active)',JL.filter(l=>l.active).map(l=>l.who).join(' + ')+'; '+inr(jw)+' paid incl. payoffs')+
   xTile(inr((L.hdfc||[]).reduce((s,x)=>s+x.outstanding,0)),'HDFC loans outstanding (3 loans)',(L.hdfc||[]).every(x=>!/^estimate/.test(x.src||'estimate'))?'per HDFC quarterly loan summaries + EMIs paid since':'partly estimated from EMIs paid');
  const sec=(t,note,rows,cols)=>`<details class="fold"><summary>${esc(t)}</summary>${note?`<p class="dim">${note}</p>`:''}<div class="wrap"><table class="cards">${rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="w">${esc(r[2]||'')}</td><td class="n">${inr(r[1])}</td></tr>`).join('')}</table></div></details>`;
  let html=`<section><h2>Still owed</h2><p class="dim">Bank statements show money moving, not the loan balance. Outstanding today, as far as these statements show:</p><table>
@@ -455,9 +475,10 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
  ${(L.hdfc||[]).map(x=>`<tr><td>${esc(x.name)} <span class="dim small">${x.acct}</span></td><td class="n">${inr(x.outstanding)}</td><td class="dim small">${esc(x.src||'estimate')}; sanctioned ${inr(x.sanction)}, EMI ${inr(x.emi)} at ${x.rate}%</td></tr>`).join('')}
  ${(L.od||[]).map(x=>`<tr><td>${esc(x.name)}</td><td class="n">${inr(x.amount)}</td><td class="dim small">balance as on ${fd(x.date)}; the account is below zero</td></tr>`).join('')}
  <tr><td>Gold loan (Palani)</td><td class="n">${inr(gold)}</td><td class="dim small">assumed unpaid; tell Claude if repaid</td></tr>
- <tr><td>IOB jewel loan</td><td class="n">?</td><td class="dim small">needs the IOB loan balance</td></tr>
- ${Object.keys(L.emi).map(k=>`<tr><td>${esc(k)}</td><td class="n">?</td><td class="dim small">EMI loan, needs the lender's balance</td></tr>`).join('')}</table></section>`;
- html+=sec('Home loan received','',h.rows)+sec('Home loan interest & charges','',h.int_rows)+sec('IOB jewel loan payments','',L.jewel);
+ ${JL.filter(l=>l.active).map(l=>`<tr><td>IOB jewel loan <span class="dim small">…${l.ref}</span> (${esc(l.who)})</td><td class="n">${inr(l.amt)}</td><td class="dim small">taken ${fd(l.date)}; ${inr(l.paid)} paid since (monthly, mostly interest) - exact balance from IOB</td></tr>`).join('')}
+ ${Object.keys(L.emi).filter(k=>!/^IOB jewel loan/.test(k)).map(k=>`<tr><td>${esc(k)}</td><td class="n">?</td><td class="dim small">EMI loan, needs the lender's balance</td></tr>`).join('')}</table></section>`;
+ html+=sec('Home loan received','',h.rows)+sec('Home loan interest & charges','',h.int_rows)+sec('IOB jewel loan payments','',L.jewel)+
+  (JL.some(l=>!l.active)?`<details class="fold"><summary>Closed jewel loans (renewed)</summary><div class="wrap"><table class="cards">${JL.filter(l=>!l.active).map(l=>`<tr><td class="d">${fd(l.date)}</td><td class="w">…${l.ref} (${esc(l.who)}) - paid off when renewed</td><td class="n">${inr(l.amt)}</td></tr>`).join('')}</table></div></details>`:'');
  Object.entries(L.emi).forEach(([k,r])=>html+=sec('EMI: '+k,`${r.length} payments, ${inr(r.reduce((s,x)=>s+x[1],0))} in all`,r));
  $('ln-s').innerHTML=html})();
 
@@ -465,8 +486,26 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
 (()=>{const A=D.assets||[],tot=A.reduce((s,a)=>s+(+a.value||0),0);
  if(!A.length){$('as-k').innerHTML=xTile('—','Total assets','no values yet');
   $('as-l').innerHTML='<p class="dim">Land, house, gold, diamond, equity and mutual funds are not in the bank statements. Send Claude each item with its approximate value and it will appear here, grouped by type.</p>';return}
- $('as-k').innerHTML=xTile(inr(tot),'Total assets',`${A.length} items`)+xGroup(A.map(a=>['','','',+a.value||0,a.type]),r=>r[4]).map(([t,v])=>xTile(inr(v),t,'')).join('');
- $('as-l').innerHTML='<table>'+A.map(a=>`<tr><td>${esc(a.type)}</td><td class="w">${esc(a.name||'')}</td><td class="n">${a.value==null?'<span class="dim">value needed</span>':inr(+a.value||0)}</td></tr>`).join('')+'</table>'+A.filter(a=>a.items).map(a=>`<details class="fold"><summary>${esc(a.name)}</summary><p class="dim">Share counts from Zerodha's own statements. Zerodha statements carry no prices, so a total value needs one figure from the Kite app.</p><table>${a.items.map(i=>`<tr><td class="w">${esc(i[0])}</td><td class="n">${i[1]}</td></tr>`).join('')}</table></details>`).join('')})();
+ // INDmoney-style: hero total, filter chips, one row per asset type (icon, allocation %, value) that opens to its items
+ const L=D.loans||{},owe=(L.home||{received:0}).received+(L.hdfc||[]).reduce((s,x)=>s+x.outstanding,0)+(L.od||[]).reduce((s,x)=>s+x.amount,0)+(L.gold||[]).reduce((s,r)=>s+r[1],0);
+ const need=A.filter(a=>a.value==null).length;
+ $('as-k').innerHTML=`<div class="hl">Total current value</div><div class="hsplit"><div><b>${inr(tot)}</b><small>${A.length} items${need?', '+need+' still need a value':''}</small></div>
+  <div data-go="loans" tabindex="0" role="button"><span>We owe</span><b>${inr(owe)}</b><small>${need?'net worth once values are in':'net worth '+inr(tot-owe)}</small></div></div>`;
+ const IC={'Bank balance':'M3 10l9-6 9 6M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18','Equity':'M4 20V10M10 20V4M16 20v-7M21 20H3','Mutual funds':'M4 20v-6h4v6M10 20V9h4v11M16 20V5h4v15','Retirement':'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2'};
+ const G=xGroup(A.map(a=>['','','',+a.value||0,a.type]),r=>r[4]),types=G.map(g=>g[0]);
+ const item=a=>{const i=(a.name||'').indexOf(': '),t=i>0?a.name.slice(0,i):a.name,s=i>0?a.name.slice(i+2):'';
+  return `<div class="frow"><div><b>${esc(t)}</b>${s?`<small>${esc(s)}</small>`:''}</div><span>${a.value==null?'<span class="dim">value needed</span>':inr(+a.value||0)}</span></div>`+
+   (a.items?`<details class="fold"><summary>${a.items.length} holdings</summary><p class="dim">Share counts from Zerodha statements (no prices).</p><table>${a.items.map(i=>`<tr><td class="w">${esc(i[0])}</td><td class="n">${i[1]}</td></tr>`).join('')}</table></details>`:'')};
+ const draw=f=>{$('as-l').innerHTML=G.filter(([t])=>!f||t===f).map(([t,v])=>{const its=A.filter(a=>a.type===t),miss=its.filter(a=>a.value==null).length;
+  return `<details${f?' open':''}><summary><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${IC[t]||'M4 7h16v12H4zM9 7V5h6v2'}"/></svg></span>
+   <span><b>${esc(t)}</b><small>${tot?(v/tot*100).toFixed(1):'0.0'}% allocation</small></span>
+   <span class="v">${inr(v)}<small>${its.length} item${its.length===1?'':'s'}${miss?', '+miss+' to value':''}</small></span><span class="chev"></span></summary>
+   <div class="items">${its.map(item).join('')}</div></details>`}).join('');
+  $('as-c').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.f||'')===f)))};
+ $('as-c').innerHTML=['',...types].map(t=>`<button type="button" data-f="${esc(t)}">${t?esc(t):'All'}</button>`).join('');
+ $('as-c').onclick=e=>{const b=e.target.closest('button');if(b)draw(b.dataset.f)};
+ $('as-k').querySelector('[data-go]').onclick=()=>showTab('loans');
+ draw('')})();
 
 
 // ---------------- decision pending: pick a tag, send the choices back to the PC
