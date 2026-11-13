@@ -1,0 +1,345 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fam's Finance</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* quiet and classy: deep navy band, warm paper, white cards, one teal accent (no yellow/red/orange, Palani's rule) */
+:root{--navy:#14254a;--navy2:#0f1d3b;--bg:#f4f3ef;--panel:#ffffff;--chalk:#15213b;--dim:#7a8396;--line:#e6e4dd;--accent:#0f8b7d;--soft:#eef1f6;--ink:#14254a;color-scheme:light}
+*{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden}
+body{margin:0;background:var(--bg);color:var(--chalk);font:15px/1.5 'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:640px;margin:0 auto;padding:0 16px calc(96px + env(safe-area-inset-bottom,0px))}
+button{font:inherit;color:inherit;cursor:pointer}
+.n,.big,.val{font-variant-numeric:tabular-nums}
+.top{background:var(--navy);color:#fff;margin:0 -16px;padding:calc(18px + env(safe-area-inset-top,0px)) 24px 0;border-radius:0 0 24px 24px;overflow:hidden}
+.brand{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;letter-spacing:.2px;font-size:15px;opacity:.95}
+.brand small{font-weight:500;font-size:11px;opacity:.6}
+.lbl{margin-top:22px;font-size:12px;letter-spacing:1.6px;text-transform:uppercase;opacity:.7}
+.big{font-size:clamp(34px,10vw,44px);font-weight:800;letter-spacing:-.5px;line-height:1.15;margin:4px 0 2px}
+.note{font-size:12px;opacity:.6;margin-bottom:20px}
+.strip{display:flex;justify-content:space-between;align-items:center;width:calc(100% + 48px);margin:0 -24px;padding:14px 24px;background:var(--navy2);border:0;color:#fff;text-align:left}
+.strip b{font-weight:700}.strip .up{color:#6fd3c4;font-weight:700}
+.strip:not([data-i]){cursor:default}
+.chev{width:8px;height:8px;border:solid currentColor;border-width:0 1.6px 1.6px 0;transform:rotate(-45deg);opacity:.5;flex:none}
+h2{font-size:17px;font-weight:700;margin:28px 0 12px;display:flex;justify-content:space-between;align-items:baseline}
+h2 small{font-size:12px;font-weight:600;color:var(--dim)}
+.card{background:var(--panel);border-radius:18px;box-shadow:0 1px 2px rgba(20,37,74,.05),0 6px 24px rgba(20,37,74,.05)}
+.happen{display:flex;align-items:center;gap:14px;width:100%;padding:16px 18px;border:0;margin-bottom:10px;text-align:left}
+.happen .ic{background:#e6f4f1}.happen b{display:block;font-weight:700;color:var(--ink)}.happen span{font-size:13px;color:var(--dim)}
+.happen>div{flex:1;min-width:0}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:9px 16px;font-weight:600;font-size:14px;color:var(--chalk)}
+.chips button[aria-pressed=true]{background:var(--navy);border-color:var(--navy);color:#fff}
+.chips button small{opacity:.6;font-weight:500;margin-left:4px}
+.tot{padding:18px 20px 6px}.tot span{font-size:13px;color:var(--dim)}.tot b{display:block;font-size:30px;font-weight:800;letter-spacing:-.4px}
+.li{display:grid;grid-template-columns:42px minmax(0,1fr) auto 10px;gap:14px;align-items:center;width:100%;padding:16px 20px;border:0;border-top:1px solid var(--line);background:none;text-align:left}
+.li:first-child{border-top:0}
+.li:not([data-i]) .chev{visibility:hidden}.li:not([data-i]){cursor:default}
+.li[data-i]:active{background:var(--soft)}
+.ic{width:42px;height:42px;border-radius:50%;background:var(--soft);display:grid;place-items:center;flex:none}
+.ic svg{width:20px;height:20px;fill:none;stroke:var(--navy);stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.li b{display:block;font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li small{display:block;font-size:12.5px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.val{text-align:right;font-weight:700;font-size:16px;white-space:nowrap}
+.val small{font-weight:600;font-size:12px;color:var(--accent)}
+.val.in{color:var(--accent)}
+.foot{font-size:12px;color:var(--dim);margin:14px 4px}
+.items{padding:0 20px 14px 76px}
+.items .it{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:13.5px}
+.items .it:first-child{border-top:0}.items .it small{display:block;color:var(--dim);font-size:12px}
+details.li-d>summary{list-style:none}details.li-d>summary::-webkit-details-marker{display:none}
+details.li-d{border-top:1px solid var(--line)}details.li-d:first-child{border-top:0}
+details.li-d>summary.li{border-top:0}details.li-d[open] .chev{transform:rotate(45deg)}
+/* transactions */
+.search{display:flex;gap:8px;margin:16px 0 12px}
+.search input,.search select{flex:1;min-width:0;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:11px 14px;font:inherit;color:var(--chalk)}
+.search select{flex:0 0 auto;max-width:42%}
+.xchip{display:inline-flex;align-items:center;gap:8px;background:var(--navy);color:#fff;border:0;border-radius:12px;padding:8px 14px;font-weight:600;font-size:13px;margin-bottom:12px}
+.day{font-size:12px;font-weight:700;color:var(--dim);letter-spacing:.6px;text-transform:uppercase;padding:14px 20px 4px}
+.tx .li{grid-template-columns:38px minmax(0,1fr) auto;padding:12px 20px}.tx .ic{width:38px;height:38px}
+.more{display:block;width:100%;border:0;background:none;padding:16px;color:var(--accent);font-weight:700;border-top:1px solid var(--line)}
+.pend{padding:6px 20px 14px}.pend .row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:12px 0;border-top:1px solid var(--line);font-size:14px}
+.pend .row:first-of-type{border-top:0}.pend .row select{grid-column:1/-1;width:100%;border:1px solid var(--line);border-radius:10px;padding:9px;font:inherit;background:var(--panel);color:var(--chalk)}
+.pend .row.done select{border-color:var(--accent)}.pend summary{font-weight:700;padding:14px 0;cursor:pointer}.dim{color:var(--dim)}.small{font-size:12px}
+#decbar{position:sticky;bottom:calc(72px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--navy);color:#fff;border-radius:14px;padding:10px 12px 10px 18px;margin-top:16px}
+#decbar[hidden],#decout[hidden]{display:none}
+#decbar button,#decout button{border:0;border-radius:10px;padding:9px 14px;background:#fff;color:var(--navy);font-weight:700}
+#decout{padding:18px;margin-top:12px}#decout .btns{display:flex;gap:8px;margin-top:10px}
+/* Projects > Plan editor */
+.pe{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
+.pe span{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:var(--dim);font-size:13px}
+.pe input{width:118px;font:inherit;font-size:15px;color:var(--chalk);padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--soft);text-align:right}
+.pe-btns{display:flex;gap:8px;padding:12px 16px}
+.pe-btns button{border:1px solid var(--line);border-radius:10px;padding:9px 14px;background:var(--panel);font-weight:700;color:var(--navy)}
+.pe-btns .pe-save{background:var(--navy);color:#fff;border-color:var(--navy)}
+/* bottom navigation */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:space-around;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);
+ padding:6px max(6px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px))}
+.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:none;color:var(--dim);font-size:11.5px;font-weight:600;padding:6px 0;position:relative}
+.tabs button svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tabs button[aria-selected=true]{color:var(--navy)}
+.tabs button[aria-selected=true]::before{content:'';position:absolute;top:-7px;width:36px;height:3px;border-radius:0 0 3px 3px;background:var(--navy)}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style></head><body><main>
+<div class="tab" id="t-home"><div class="top"><div class="brand"><span>Fam's Finance</span><small id="upd"></small></div>
+ <div class="lbl">We own</div><div class="big" id="h-own"></div><div class="note" id="h-note"></div><button class="strip" id="h-owe"></button></div>
+ <h2>What's happening</h2><div id="h-hap"></div>
+ <h2>Summary</h2><div class="chips" id="h-chips" role="group" aria-label="Summary view"></div><div class="card" id="h-list"></div>
+ <p class="foot" id="h-foot"></p></div>
+<div class="tab" id="t-assets" hidden><div class="top"><div class="brand"><span>Assets</span></div>
+ <div class="lbl">Total current value</div><div class="big" id="a-tot"></div><div class="note" id="a-note"></div></div>
+ <h2>Your assets</h2><div class="chips" id="a-chips" role="group" aria-label="Asset type"></div><div class="card" id="a-list"></div></div>
+<div class="tab" id="t-loans" hidden><div class="top"><div class="brand"><span>Loans</span></div>
+ <div class="lbl">We owe</div><div class="big" id="l-tot"></div><div class="note" id="l-note"></div><button class="strip" id="l-emi"></button></div>
+ <h2>Your loans</h2><div class="card" id="l-list"></div><p class="foot">Bank statements show money moving, not loan balances. HDFC figures follow HDFC's loan summaries plus EMIs paid since.</p></div>
+<div class="tab" id="t-txn" hidden><div class="top"><div class="brand"><span>Transactions</span><small id="x-cnt"></small></div>
+ <div class="lbl" id="x-lbl">Paid out</div><div class="big" id="x-out"></div><div class="note" id="x-in"></div></div>
+ <div class="search"><input type="search" id="x-q" placeholder="Search payee or narration" aria-label="Search transactions"><select id="x-m" aria-label="Month"></select></div>
+ <div id="x-x"></div><div class="chips" id="x-chips" role="group" aria-label="Classification"></div>
+ <div class="card pend" id="x-dec" hidden><section id="pd-cbe" hidden></section><section id="pd-thot" hidden></section><section id="pd-spend" hidden></section></div>
+ <div class="card tx" id="x-list"></div>
+ <div id="decbar" hidden><span id="decn"></span><button id="decsend">Send my choices</button></div>
+ <div class="card" id="decout" hidden><b>Your choices</b><p class="dim small" id="decnote">Tap Copy, then paste it to kiddo (Claude). It is applied on the PC and the next refresh shows it everywhere.</p>
+ <textarea id="dectext" readonly rows="6" style="width:100%;font:12px monospace;border:1px solid var(--line);border-radius:10px;padding:8px"></textarea>
+ <div class="btns"><button id="deccopy">Copy</button><button id="decclear">Clear my choices</button><button id="decclose">Close</button></div></div></div>
+</main>
+<nav class="tabs" role="tablist" aria-label="Sections">
+<button role="tab" data-t="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>Home</button>
+<button role="tab" data-t="assets"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg>Assets</button>
+<button role="tab" data-t="loans"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18"/></svg>Loans</button>
+<button role="tab" data-t="txn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Transactions</button></nav>
+<script>window.FL_URL="https://raw.githubusercontent.com/Palaniappanst/family-ledger-data/main/family.enc";window.FL_LOCK=1;</script>
+<script>
+// self-update: the newest PIN-locked figures from GitHub replace the copy packed in the page
+const FL={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},
+ del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
+function flPick(d0){try{const c=JSON.parse(FL.get('fl_data')||'null');if(c&&(!d0||c.generated_ts>(d0.generated_ts||0)))return c}catch(e){}return d0}
+async function flDec(e,pin){const b=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0)),te=new TextEncoder();
+ const k0=await crypto.subtle.importKey('raw',te.encode(pin),'PBKDF2',false,['deriveKey']);
+ const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b(e.salt),iterations:e.iter,hash:'SHA-256'},k0,{name:'AES-GCM',length:256},false,['decrypt']);
+ return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:b(e.iv)},k,b(e.ct))))}
+function flAsk(msg){return new Promise(ok=>{const o=document.createElement('div');
+ o.style.cssText='position:fixed;inset:0;z-index:9;display:grid;place-items:center;background:rgba(11,24,40,.92);padding:16px';
+ o.innerHTML=`<form style="background:var(--panel);border:1px solid var(--line);padding:20px;max-width:320px;width:100%;display:grid;gap:10px">
+ <label for="flp" style="font-weight:600">${msg}</label><input id="flp" type="password" inputmode="numeric" autocomplete="off"
+ style="font:inherit;font-size:20px;padding:8px;background:var(--bg);color:var(--chalk);border:1px solid var(--line)"><button>Open</button></form>`;
+ document.body.appendChild(o);const i=o.querySelector('input');i.focus();
+ o.querySelector('form').onsubmit=ev=>{ev.preventDefault();o.remove();ok(i.value.trim())}})}
+// 13.11.2026 family app (FL_LOCK): PIN on EVERY open. PIN + unlocked figures live only in sessionStorage
+// (gone when the app is reopened - MainActivity clears it); only the still-encrypted file is kept for offline.
+const SS={get:k=>{try{return sessionStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{sessionStorage.setItem(k,v)}catch(e){}}};
+async function flLock(d){let e=null;
+ try{const r=await fetch(FL_URL+'?t='+Date.now(),{cache:'no-store'});if(r.ok){e=await r.json();FL.set('fl_enc',JSON.stringify(e))}}catch(err){}
+ if(!e)try{e=JSON.parse(FL.get('fl_enc')||'null')}catch(err){}
+ if(!e)return;
+ if(d){if(e.ts<=(d.generated_ts||0))return;   // unlocked this session: just pick up newer figures
+  try{SS.set('fl_data',JSON.stringify(await flDec(e,SS.get('fl_pin'))));location.reload()}catch(err){}return}
+ let msg='Enter the family PIN';
+ for(;;){const pin=await flAsk(msg);
+  try{const x=await flDec(e,pin);SS.set('fl_pin',pin);SS.set('fl_data',JSON.stringify(x));location.reload();return}
+  catch(err){msg='Wrong PIN, try again'}}}
+async function flUpdate(d){if(!window.FL_URL)return;
+ if(window.FL_LOCK)return flLock(d);
+ try{const r=await fetch(FL_URL+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const e=await r.json();
+  if(d&&e.ts<=(d.generated_ts||0))return;
+  let pin=FL.get('fl_pin'),msg='Enter the family PIN to see the latest figures';
+  for(let n=0;n<5;n++){if(!pin)pin=await flAsk(msg);
+   try{const x=await flDec(e,pin);FL.set('fl_pin',pin);FL.set('fl_data',JSON.stringify(x));location.reload();return}
+   catch(err){pin=null;FL.del('fl_pin');msg='Wrong PIN, try again'}}}
+ catch(err){/* offline: keep showing the last copy */}}
+const D0=null;
+if(window.FL_LOCK){FL.del('fl_pin');FL.del('fl_data')}  // older app versions kept these on the phone
+const D=window.FL_LOCK?(()=>{try{return JSON.parse(SS.get('fl_data')||'null')}catch(e){return null}})():flPick(D0);
+flUpdate(D);
+if(!D)throw new Error('waiting for the PIN');
+const inr=x=>{const n=Math.round(Math.abs(x)),s=n.toString();const o=s.length>3?s.slice(0,-3).replace(/\B(?=(\d{2})+(?!\d))/g,',')+','+s.slice(-3):s;return(x<0?'−':'')+'₹'+o};
+const fd=s=>s?new Date(s+'T00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'';
+const xMon=m=>new Date(m+'-01T00:00').toLocaleDateString('en-GB',{month:'short',year:'numeric'});
+const $=id=>document.getElementById(id),esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sum=(a,f)=>a.reduce((s,x)=>s+f(x),0);
+$('upd').textContent='Updated '+D.generated;
+
+// icons
+const P={home:'M3 11l9-8 9 8M5 10v10h14V10',build:'M4 21V5h10v16M14 10h6v11M8 9h2M8 13h2M8 17h2',leaf:'M5 21c0-9 5-15 15-16-1 10-6 15-15 16zM5 21l7-8',
+ bank:'M3 10l9-6 9 6M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18',chart:'M4 20V10M10 20V4M16 20v-7M21 20H3',shield:'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
+ wallet:'M3 7h18v12H3zM16 13h2M3 7l3-3h12',gift:'M4 11h16v9H4zM3 7h18v4H3zM12 7v13M12 7c-2-4-6-3-5 0M12 7c2-4 6-3 5 0',bag:'M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2',
+ school:'M2 9l10-5 10 5-10 5zM6 11v5c3 2 9 2 12 0v-5',car:'M5 16h14M6 16l1.5-6h9L18 16M7 19v-3M17 19v-3',food:'M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M16 3c-2 2-2 6 0 8v10',
+ dots:'M6 12h.01M12 12h.01M18 12h.01',inn:'M12 19V5M5 12l7 7 7-7',out:'M12 5v14M5 12l7-7 7 7',q:'M9 9a3 3 0 1 1 4 2.8c-.7.3-1 .8-1 1.5V14M12 18h.01',
+ msg:'M4 5h16v11H8l-4 4z',clock:'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2',rupee:'M7 5h10M7 9h10M7 5c6 0 6 8 0 8l8 7'};
+const CI={'EMI':'bank','Investment':'chart','Insurance':'shield','Interest':'bank','Chit fund':'wallet','Donations':'gift','Household expenses':'home',
+ 'Personal expenses':'bag','School fees':'school','Travel':'car','Food':'food','Other payments':'dots','CBE House':'build','Ammapatti thottam':'leaf',
+ 'Home loan received':'bank','Home loan interest':'bank','Gold loan received':'bank','Put into CBE House':'inn','Taken out (Palani)':'out','To decide':'q',
+ 'Not yet in a statement':'msg','Salary':'inn','Bank balance':'bank','Equity':'chart','Mutual funds':'chart','Retirement':'clock'};
+const ic=k=>`<span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${P[CI[k]||k]||P.rupee}"/></svg></span>`;
+
+// one list of every transaction, each with its classification
+const OCLS={'Paid to Murali (Jothi)':'CBE House','Other vendors':'CBE House','Loan interest & charges':'Home loan interest','IOB jewel loan repayments':'EMI',
+ 'Palani taken':'Taken out (Palani)','Palani personal':'Personal expenses','Awaiting decision':'To decide','Other withdrawals':'Other payments','Thottam (Palani)':'Ammapatti thottam'};
+const thotIds=new Set(D.thot_ids||[]),T=[];
+// thottam comes from thot_rows (the thottam list), so the same payments are not taken twice from tx
+D.tx.forEach(t=>{if(thotIds.has(t.id))return;let c,inn=false;
+ if(t.o)c=OCLS[t.o]||t.o;else{inn=true;c=t.s==='Canara home loan'?'Home loan received':/Gold loan/.test(t.s||'')?'Gold loan received':'Put into CBE House'}
+ T.push({d:t.d,a:t.a,p:t.t,v:t.v,c,inn,n:t.mm||''})});
+(D.spend||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:r[4],n:r[5]||''}));
+(D.thot_rows||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'Ammapatti thottam',n:r[4]||''}));
+(D.recent||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'Not yet in a statement',n:'from bank alert / SMS'}));
+(D.income||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[4]||'Salary',v:r[2],c:'Salary',inn:true,n:r[3]||''}));
+T.sort((x,y)=>x.d<y.d?1:x.d>y.d?-1:y.v-x.v);
+
+// tap registry: any element with data-i runs GO[i]
+const GO=[],go=f=>`data-i="${GO.push(f)-1}"`;
+document.addEventListener('click',e=>{const el=e.target.closest('[data-i]');if(el&&el.tagName!=='SUMMARY')GO[+el.dataset.i]()});
+const li=(k,title,sub,val,vsub,f,inn)=>`<button class="li" ${f?go(f):'tabindex="-1"'}>${ic(k)}<span><b>${esc(title)}</b>${sub?`<small>${esc(sub)}</small>`:''}</span><span class="val${inn?' in':''}">${val}${vsub?`<br><small>${esc(vsub)}</small>`:''}</span><span class="chev"></span></button>`;
+
+// tabs
+const TABS=['home','assets','loans','txn'];
+function showTab(t){if(!TABS.includes(t))t='home';
+ document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
+ TABS.forEach(x=>$('t-'+x).hidden=x!==t);scrollTo(0,0);try{localStorage.setItem('tab',t)}catch(e){}}
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{if(b.dataset.t==='txn'){X.f=null;X.c='';drawTx()}showTab(b.dataset.t)});
+
+// ---------------- Transactions: filter by classification, month, search, or a figure tapped elsewhere
+const X={c:'',f:null,lim:150};
+const openTx=(label,f,c,m)=>{X.f=f?{label,f}:null;X.c=c||'';$('x-m').value=m||'';$('x-q').value='';X.lim=150;drawTx();showTab('txn')};
+const months=[...new Set(T.map(t=>t.d.slice(0,7)))].sort().reverse();
+$('x-m').innerHTML='<option value="">All months</option>'+months.map(m=>`<option value="${m}">${xMon(m)}</option>`).join('');
+function drawTx(){const q=$('x-q').value.toLowerCase(),m=$('x-m').value;
+ const base=T.filter(t=>(!m||t.d.startsWith(m))&&(!X.f||X.f.f(t))&&(!q||(t.p+' '+t.n+' '+t.a+' '+t.c).toLowerCase().includes(q)));
+ const R=base.filter(t=>!X.c||t.c===X.c),out=sum(R.filter(t=>!t.inn),t=>t.v),inn=sum(R.filter(t=>t.inn),t=>t.v);
+ $('x-lbl').textContent=X.f?X.f.label:(X.c||'All transactions')+(m?' · '+xMon(m):'');
+ $('x-out').textContent=inr(out||inn);$('x-in').textContent=(out&&inn?`paid out · ${inr(inn)} came in · `:inn&&!out?'came in · ':'paid out · ')+R.length+' transactions';
+ $('x-cnt').textContent=months.length?'Statements to '+fd(D.latest):'';
+ $('x-x').innerHTML=X.f?`<button class="xchip" ${go(()=>{X.f=null;drawTx()})}>${esc(X.f.label)} <span aria-hidden="true">✕</span><span class="sr" style="position:absolute;left:-9999px">clear filter</span></button>`:'';
+ const cls={};base.forEach(t=>{(cls[t.c]=cls[t.c]||[0,0]);cls[t.c][0]++;cls[t.c][1]+=t.v});
+ const order=Object.entries(cls).sort((a,b)=>(b[0]==='To decide')-(a[0]==='To decide')||b[1][1]-a[1][1]);
+ const decN=(D.pend.cbe.length+D.pend.thot.length+D.pend.spend.length);
+ if(decN&&!cls['To decide'])order.unshift(['To decide',[0,0]]);
+ $('x-chips').innerHTML=[['',[base.length]]].concat(order).map(([c,[n]])=>`<button aria-pressed="${X.c===c}" ${go(()=>{X.c=c;X.lim=150;drawTx()})}>${c?esc(c):'All'}<small>${c==='To decide'?decN+n:n}</small></button>`).join('');
+ $('x-dec').hidden=X.c!=='To decide';
+ let h='',last='';R.slice(0,X.lim).forEach(t=>{if(t.d!==last){h+=`<div class="day">${fd(t.d)}</div>`;last=t.d}
+  h+=`<div class="li">${ic(t.c)}<span><b>${esc(t.p)}</b><small>${esc(t.c)} · ${esc(t.a)}</small></span><span class="val${t.inn?' in':''}">${t.inn?'+':''}${inr(t.v)}</span></div>`});
+ $('x-list').innerHTML=(h||`<p class="dim" style="padding:20px">${X.c==='To decide'?'Choose a tag for each item above.':'No transactions match.'}</p>`)+(R.length>X.lim?`<button class="more" ${go(()=>{X.lim+=300;drawTx()})}>Show more (${R.length-X.lim} left)</button>`:'');
+ $('x-list').hidden=X.c==='To decide'&&!R.length}
+let qt;$('x-q').oninput=()=>{clearTimeout(qt);qt=setTimeout(()=>{X.lim=150;drawTx()},150)};$('x-m').onchange=()=>{X.lim=150;drawTx()};
+
+// ---------------- Loans (summary; tap opens the payments behind it)
+const L=D.loans||{},h=L.home||{received:0,interest:0,sanction:0,int_rows:[]},JL=(L.jl||[]).filter(l=>l.active);
+const gold=sum(L.gold||[],r=>r[1]),hdfc=L.hdfc||[],od=L.od||[];
+const owe=h.received+sum(hdfc,x=>x.outstanding)+sum(od,x=>x.amount)+gold+sum(JL,l=>l.amt);
+const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));return t=>s.has(t.d+'|'+Math.round(t.v))};
+(()=>{$('l-tot').textContent=inr(owe);$('l-note').textContent=`${2+hdfc.length+od.length+JL.length} loans and overdrafts`;
+ const now=new Date(),mon=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`,emiM=T.filter(t=>t.c==='EMI'&&t.d.startsWith(mon));
+ $('l-emi').innerHTML=`<span>EMIs paid in ${xMon(mon)}: <b>${inr(sum(emiM,t=>t.v))}</b></span><span class="chev"></span>`;$('l-emi').setAttribute('data-i',GO.push(()=>openTx('EMIs, '+xMon(mon),null,'EMI',mon))-1);
+ let r=li('bank','Canara home loan',`of ${inr(h.sanction)} sanctioned`,inr(h.received),h.sanction?Math.round(h.received*100/h.sanction)+'% received':'',()=>openTx('Home loan received',null,'Home loan received'));
+ r+=li('bank','Home loan interest paid','pre-EMI interest and charges',inr(h.interest),'',()=>{const k=keyset(h.int_rows||[]);openTx('Home loan interest',t=>t.a==='Canara'&&k(t))});
+ hdfc.forEach(x=>r+=li('bank',x.name,`EMI ${inr(x.emi)} at ${x.rate}%`,inr(x.outstanding),'of '+inr(x.sanction),()=>openTx(x.name+', EMIs of '+inr(x.emi),t=>t.c==='EMI'&&Math.round(t.v)===Math.round(x.emi))));  // HDFC EMI debits carry no loan number
+ od.forEach(x=>r+=li('wallet',x.name,'overdrawn, as on '+fd(x.date),inr(x.amount),'',()=>openTx(x.name,t=>t.a===x.name.replace(/ overdraw*.*$/i,''))));
+ if(gold)r+=li('gift','Gold loan (Palani)','assumed unpaid',inr(gold),'',()=>openTx('Gold loan',null,'Gold loan received'));
+ JL.forEach(l=>r+=li('gift','IOB jewel loan …'+l.ref,l.who+', taken '+fd(l.date),inr(l.amt),inr(l.paid)+' paid',()=>openTx('IOB jewel loans',keyset(L.jewel||[]))));
+ Object.entries(L.emi||{}).filter(([k])=>!/^IOB jewel loan/.test(k)).forEach(([k,rows])=>r+=li('bank',k,rows.length+' EMIs paid, balance not known','—',inr(sum(rows,x=>x[1]))+' paid',()=>openTx(k,keyset(rows))));
+ $('l-list').innerHTML=r})();
+
+// ---------------- Assets (summary by type; tap a type for its items)
+(()=>{const A=D.assets||[],tot=sum(A,a=>+a.value||0),need=A.filter(a=>a.value==null).length;
+ $('a-tot').textContent=inr(tot);$('a-note').textContent=A.length+' items'+(need?', '+need+' still need a value':'');
+ const G={};A.forEach(a=>(G[a.type]=G[a.type]||[]).push(a));const types=Object.keys(G).sort((x,y)=>sum(G[y],a=>+a.value||0)-sum(G[x],a=>+a.value||0));
+ const item=a=>{const i=(a.name||'').indexOf(': '),t=i>0?a.name.slice(0,i):a.name,s=i>0?a.name.slice(i+2):'';
+  return `<div class="it"><div><b>${esc(t)}</b>${s?`<small>${esc(s)}</small>`:''}</div><span class="n">${a.value==null?'<span class="dim">value needed</span>':inr(+a.value||0)}</span></div>`};
+ let f='';const draw=()=>{$('a-chips').innerHTML=['',...types].map(t=>`<button aria-pressed="${f===t}" ${go(()=>{f=t;draw()})}>${t?esc(t):'All'}</button>`).join('');
+  $('a-list').innerHTML=types.filter(t=>!f||t===f).map(t=>{const v=sum(G[t],a=>+a.value||0),miss=G[t].filter(a=>a.value==null).length;
+   return `<details class="li-d"${f?' open':''}><summary class="li">${ic(t)}<span><b>${esc(t)}</b><small>${tot?(v/tot*100).toFixed(1):'0.0'}% allocation</small></span><span class="val">${inr(v)}<br><small>${G[t].length} item${G[t].length>1?'s':''}${miss?', '+miss+' to value':''}</small></span><span class="chev"></span></summary><div class="items">${G[t].map(item).join('')}</div></details>`}).join('')||'<p class="dim" style="padding:20px">No assets yet.</p>'};
+ draw()})();
+
+// ---------------- Home (summary only)
+(()=>{const A=D.assets||[],own=sum(A,a=>+a.value||0),need=A.filter(a=>a.value==null).length;
+ $('h-own').textContent=inr(own);$('h-note').textContent=need?`${need} assets still need a value, so net worth is not shown yet`:'Net worth '+inr(own-owe);
+ $('h-owe').innerHTML=`<span>We owe <b>${inr(owe)}</b></span><span class="chev"></span>`;$('h-owe').setAttribute('data-i',GO.push(()=>showTab('loans'))-1);
+ const now=new Date(),pad=n=>String(n).padStart(2,'0'),today=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+ const out=T.filter(t=>!t.inn),mon=months.includes(today.slice(0,7))?today.slice(0,7):(months[0]||today.slice(0,7));
+ const decN=D.pend.cbe.length+D.pend.thot.length+D.pend.spend.length,tod=out.filter(t=>t.d===today);
+ const hap=(k,b,s,f)=>`<button class="card happen" ${go(f)}>${ic(k)}<div><b>${b}</b><span>${s}</span></div><span class="chev"></span></button>`;
+ $('h-hap').innerHTML=(decN?hap('q',decN+' items to decide','Pick a tag so they are counted right',()=>openTx('',null,'To decide')):'')+
+  hap('rupee','Paid today '+inr(sum(tod,t=>t.v)),tod.length+' payment'+(tod.length===1?'':'s')+' so far',()=>openTx('Paid today',t=>t.d===today&&!t.inn));
+ const VEND=['Paid to Murali (Jothi)','Other vendors'],paidCBE=sum(D.tx.filter(t=>VEND.includes(t.o)),t=>t.v),PJ={p:null,m:'actual'};
+ const V={
+  month:()=>{const M=out.filter(t=>t.d.startsWith(mon)),tot=sum(M,t=>t.v),g={};M.forEach(t=>g[t.c]=(g[t.c]||0)+t.v);
+   return `<div class="tot"><span>Paid out in ${xMon(mon)}</span><b>${inr(tot)}</b></div>`+Object.entries(g).sort((a,b)=>b[1]-a[1]).map(([c,v])=>
+    li(c,c,(tot?(v/tot*100).toFixed(1):0)+'% of the month',inr(v),'',()=>openTx('',null,c,mon))).join('')},
+  // 13.11.2026 (user): Projects = pick a project first; inside, Plan (budget) | Actual (what the statements show)
+  projects:()=>{const PL=D.plan||{},cbeP=sum(PL.cbe||[],r=>r[3]),thP=sum(PL.thot||[],r=>r[1]),thA=sum(T.filter(t=>t.c==='Ammapatti thottam'),t=>t.v);
+   if(!PJ.p)return li('build','CBE House',cbeP?'plan '+inr(cbeP):'Coimbatore',inr(paidCBE),'paid so far',()=>{PJ.p='cbe';PJ.m='actual';draw()})+
+    li('leaf','Ammapatti thottam',thP?'plan '+inr(thP):'tracking only',inr(thA),'spent so far',()=>{PJ.p='thot';PJ.m='actual';draw()});
+   const head=`<div class="chips" role="group" aria-label="Plan or actual" style="padding:12px 12px 4px">`+
+    `<button ${go(()=>{PJ.p=null;draw()})}>‹ All projects</button>`+
+    [['plan','Plan'],['actual','Actual']].map(([k,l])=>`<button aria-pressed="${PJ.m===k}" ${go(()=>{PJ.m=k;draw()})}>${l}</button>`).join('')+`</div>`;
+   if(PJ.p==='cbe'&&PJ.m==='plan'){
+    // editable budget (13.11.2026): own edits show at once (kept with the other choices), everyone else's after the PC applies them
+    let o={};try{o=JSON.parse(localStorage.getItem('fl_dec')||'{}')}catch(e){}
+    const nv=(x,d)=>x!=null&&x!==''&&!isNaN(+x)?+x:d;
+    const rows=(PL.cbe||[]).map(([n,q,rate,amt])=>{const k='plan:cbe:'+n;q=nv(o[k+':qty'],q);rate=nv(o[k+':rate'],rate);
+     return[n,q,rate,q!=null&&rate!=null?q*rate:nv(o[k],amt)]}),tot=sum(rows,r=>r[3]);
+    const inp=(k,v,l)=>`<input type="number" inputmode="decimal" min="0" data-pk="${esc(k)}" value="${v}" aria-label="${esc(l)}">`;
+    if(PJ.e)return head+`<div class="tot"><span>Edit CBE House budget</span><b>${inr(tot)}</b></div>`+rows.map(([n,q,rate,amt])=>
+     `<div class="pe"><b>${esc(n)}</b><span>${q!=null?inp('plan:cbe:'+n+':qty',q,n+' square feet')+' sq ft × ₹'+inp('plan:cbe:'+n+':rate',rate,n+' rate per square foot'):'₹'+inp('plan:cbe:'+n,amt,n+' amount')}</span></div>`).join('')+
+     `<div class="pe-btns"><button class="pe-save" ${go(()=>{let n=0;document.querySelectorAll('[data-pk]').forEach(i=>{const k=i.dataset.pk,cur=k.endsWith(':qty')?rows.find(r=>k==='plan:cbe:'+r[0]+':qty')[1]:k.endsWith(':rate')?rows.find(r=>k==='plan:cbe:'+r[0]+':rate')[2]:rows.find(r=>k==='plan:cbe:'+r[0])[3];
+       if(i.value!==''&&+i.value!==+cur&&+i.value>=0){window.addDec(k,+i.value);n++}});PJ.e=false;draw();if(n)window.sendDec()})}>Save &amp; send</button>`+
+     `<button ${go(()=>{PJ.e=false;draw()})}>Cancel</button></div>`;
+    return head+`<div class="tot"><span>CBE House · budget</span><b>${inr(tot)}</b></div>`+
+     rows.map(([n,q,rate,amt])=>li('build',n,q!=null?q.toLocaleString('en-IN')+' sq ft × '+inr(rate):'',inr(amt),tot?(amt/tot*100).toFixed(1)+'% of budget':'')).join('')+
+     `<div class="pe-btns"><button ${go(()=>{PJ.e=true;draw()})}>Edit budget</button></div>`+
+     `<div class="tot"><span>Spent so far (Actual)</span><b>${inr(paidCBE)}</b></div>`+
+     `<p class="dim small" style="padding:0 16px 14px">Your edits show here at once; everyone else sees them after the next refresh (about 15 minutes).</p>`}
+   if(PJ.p==='cbe')return head+`<div class="tot"><span>CBE House · actual</span><b>${inr(paidCBE)}</b></div>`+
+    li('build','Paid to Murali and vendors',cbeP?'budget '+inr(cbeP):'',inr(paidCBE),inr(D.contract-paidCBE)+' still to pay Murali',()=>openTx('',null,'CBE House'))+
+    li('inn','Put into CBE House','family money into the project',inr(sum(T.filter(t=>t.c==='Put into CBE House'),t=>t.v)),'',()=>openTx('',null,'Put into CBE House'),true)+
+    li('bank','Home loan received','Canara',inr(D.loan_bank),D.loan_sanction?'of '+inr(D.loan_sanction):'',()=>openTx('',null,'Home loan received'))+
+    li('out','Taken out (Palani)','from the project accounts',inr(sum(T.filter(t=>t.c==='Taken out (Palani)'),t=>t.v)),'',()=>openTx('',null,'Taken out (Palani)'));
+   if(PJ.m==='plan')return head+`<div class="tot"><span>Ammapatti · budget</span><b>${inr(thP)}</b></div>`+
+    ((PL.thot||[]).map(([n,cost,paid,bal,st])=>li('leaf',n,st+(bal>0?' · '+inr(bal)+' balance':''),inr(cost),inr(paid)+' paid')).join('')||
+     '<p class="dim" style="padding:20px">No plan found - keep the "Thottam" sheet in Downloads\\2026 expenses.xlsx.</p>')+
+    `<div class="tot"><span>Paid per your sheet</span><b>${inr(sum(PL.thot||[],r=>r[2]))}</b></div>`;
+   return head+`<div class="tot"><span>Ammapatti · actual</span><b>${inr(thA)}</b></div>`+
+    li('leaf','Thottam payments','from the bank statements',inr(thA),thP?'budget '+inr(thP):'',()=>openTx('',null,'Ammapatti thottam'))},
+  income:()=>{const S=T.filter(t=>t.c==='Salary'),bm={};S.forEach(t=>bm[t.d.slice(0,7)]=(bm[t.d.slice(0,7)]||0)+t.v);
+   return Object.keys(bm).sort().reverse().map(m=>li('inn','Salary, '+xMon(m),S.filter(t=>t.d.startsWith(m)).length+' credits',inr(bm[m]),'',()=>openTx('',null,'Salary',m),true)).join('')||'<p class="dim" style="padding:20px">No salary credits read yet.</p>'}};
+ const NAMES={month:'This month',projects:'Projects',income:'Income'};let v='month';
+ const draw=()=>{$('h-chips').innerHTML=Object.keys(V).map(k=>`<button aria-pressed="${v===k}" ${go(()=>{v=k;PJ.p=null;draw()})}>${NAMES[k]}</button>`).join('');$('h-list').innerHTML=V[v]()};
+ draw();$('h-foot').textContent=`Bank statements read up to ${fd(D.latest)}; later days come from bank alerts and SMS.`})();
+
+// ---------------- decisions: pick a tag, send the choices back to the PC (same keys as before)
+(()=>{const P=D.pend||{cbe:[],thot:[],spend:[]};
+ const OPT={out:[['TAKEN','Taken by Palani / family use'],['VENDOR','CBE house expense'],['THOTTAM','Ammapatti thottam'],['IGNORE','Came back / not real spending']],
+  in:[['CONTRIB:Palani','Put in by Palani'],['CONTRIB:Santhiya','Put in by Santhiya'],['CONTRIB:Sithambaram','Put in by Sithambaram'],
+   ['CONTRIB:Visalakshi','Put in by Visalakshi'],['MURALI_IN',"Murali's money"],['IGNORE','Not project money']],
+  thot:[['yes','Yes, Ammapatti thottam'],['no','No, not thottam']],
+  spend:(D.cats||[]).map(c=>[c,c]).concat([['CBE Project','Actually CBE house money'],['Ammapatti Thottam','Actually Ammapatti thottam'],['Other payments','Leave as other']])};
+ let dec={};try{dec=JSON.parse(localStorage.getItem('fl_dec')||'{}')}catch(e){}
+ const save=()=>{try{localStorage.setItem('fl_dec',JSON.stringify(dec))}catch(e){}bar()};
+ const sel=(key,opts)=>`<select data-dk="${esc(key)}" aria-label="Choose a tag"><option value="">Choose…</option>${opts.map(([v,l])=>`<option value="${esc(v)}"${dec[key]===v?' selected':''}>${esc(l)}</option>`).join('')}</select>`;
+ const box=(id,title,rows)=>{const el=$(id);if(!rows.length)return;el.hidden=false;el.innerHTML=`<details open><summary>${title} · ${rows.length}</summary>`+rows.join('')+'</details>'};
+ box('pd-cbe','CBE project accounts',P.cbe.map(([k,d,a,v,t,io])=>`<div class="row${dec[k]?' done':''}"><span>${fd(d)} · ${esc(a)}<br><span class="dim small">${esc(t)}</span></span><span class="n">${io==='in'?'+':''}${inr(v)}</span>${sel(k,OPT[io])}</div>`));
+ box('pd-thot','Thottam payees',P.thot.map(([n,c,v,t])=>`<div class="row${dec['thot:'+n]?' done':''}"><span>${esc(n)} · ${c} payments<br><span class="dim small">${esc(t)}</span></span><span class="n">${inr(v)}</span>${sel('thot:'+n,OPT.thot)}</div>`));
+ box('pd-spend','Unrecognised payees',P.spend.map(([n,c,v,t])=>`<div class="row${dec['payee:'+n]?' done':''}"><span>${esc(n)} · ${c} payments<br><span class="dim small">${esc(t)}</span></span><span class="n">${inr(v)}</span>${sel('payee:'+n,OPT.spend)}</div>`));
+ document.addEventListener('change',e=>{const s=e.target.closest('select[data-dk]');if(!s)return;
+  if(s.value)dec[s.dataset.dk]=s.value;else delete dec[s.dataset.dk];s.closest('.row').classList.toggle('done',!!s.value);save()});
+ const txt=()=>'# Family ledger decisions '+new Date().toLocaleString('en-GB')+'\n'+Object.entries(dec).map(([k,v])=>k+'\t'+v).join('\n')+'\n';
+ function bar(){const n=Object.keys(dec).length;$('decbar').hidden=!n;$('decn').textContent=`${n} choice${n===1?'':'s'} made`}
+ const online=window.AndroidBridge&&(()=>{try{return AndroidBridge.available()}catch(e){return false}})();
+ $('decsend').onclick=()=>{if(online){try{AndroidBridge.pushDecisions(txt())}catch(e){}
+   $('decnote').textContent='Sent. It is picked up on the next check (within about 15 minutes). Keep this copy until you see it reflected.'}
+  $('dectext').value=txt();$('decout').hidden=false;$('decout').scrollIntoView()};
+ $('decclose').onclick=()=>{$('decout').hidden=true};
+ $('deccopy').onclick=()=>{const t=$('dectext');navigator.clipboard&&navigator.clipboard.writeText(t.value).then(()=>{$('deccopy').textContent='Copied'},()=>{t.select()})||t.select()};
+ $('decclear').onclick=()=>{dec={};save();document.querySelectorAll('select[data-dk]').forEach(s=>{s.value='';s.closest('.row').classList.remove('done')});$('decout').hidden=true};
+ // used by the Projects > Plan editor (13.11.2026): plan edits travel with the other choices
+ window.addDec=(k,v)=>{dec[k]=String(v);save()};
+ window.sendDec=()=>{$('decsend').onclick();if(!online)showTab('txn')};
+ bar()})();
+
+drawTx();
+let startTab='home';try{startTab=localStorage.getItem('tab')||'home'}catch(e){}
+showTab(location.hash.slice(1)||startTab);
+</script></body></html>
