@@ -518,7 +518,7 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
   in:[['CONTRIB:Palani','Put in by Palani'],['CONTRIB:Santhiya','Put in by Santhiya'],['CONTRIB:Sithambaram','Put in by Sithambaram'],
    ['CONTRIB:Visalakshi','Put in by Visalakshi'],['MURALI_IN',"Murali's money"],['IGNORE','Not project money']],
   thot:[['yes','Yes, Ammapatti thottam'],['no','No, not thottam']],
-  spend:(D.cats||[]).map(c=>[c,c]).concat([['CBE Project','Actually CBE house money'],['Ammapatti Thottam','Actually Ammapatti thottam'],['Other payments','Leave as other']])};
+  spend:(D.cats||[]).map(c=>[c,c]).concat([['CBE Project','CBE House'],['Ammapatti Thottam','Ammapathi Thottam'],['REMOVE','Remove from the list'],['ROUNDROBIN','Round-robin – exclude for calculation']])};
  let dec={};try{dec=JSON.parse(localStorage.getItem('fl_dec')||'{}')}catch(e){}
  const save=()=>{try{localStorage.setItem('fl_dec',JSON.stringify(dec))}catch(e){}bar()};
  const sel=(key,opts)=>`<select data-dk="${esc(key)}" aria-label="Choose a tag"><option value="">Decision pending: choose…</option>${opts.map(([v,l])=>`<option value="${esc(v)}"${dec[key]===v?' selected':''}>${esc(l)}</option>`).join('')}</select>`;
