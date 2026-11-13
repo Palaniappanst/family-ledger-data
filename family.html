@@ -189,7 +189,7 @@ const OCLS={'Paid to Murali (Jothi)':'CBE House','Other vendors':'CBE House','Lo
 const thotIds=new Set(D.thot_ids||[]),T=[];
 // thottam comes from thot_rows (the thottam list), so the same payments are not taken twice from tx
 D.tx.forEach(t=>{if(thotIds.has(t.id))return;let c,inn=false;
- if(t.o)c=OCLS[t.o]||t.o;else{inn=true;c=t.s==='Canara home loan'?'Home loan received':/Gold loan/.test(t.s||'')?'Gold loan received':'Put into CBE House'}
+ if(t.o)c=OCLS[t.o]||t.o;else{inn=true;c=t.s==='Income (gifts / other)'?'Income':t.s==='Canara home loan'?'Home loan received':/Gold loan/.test(t.s||'')?'Gold loan received':'Put into CBE House'}
  T.push({d:t.d,a:t.a,p:t.t,v:t.v,c,inn,n:t.mm||'',ck:t.k,co:inn?'in':'out'})});
 // ck/co (13.11.2026): the classification is a dropdown - a project row's choice is saved for that row,
 // a personal payment's choice for its payee (all its payments, now and later)
@@ -217,7 +217,7 @@ const X={c:'',f:null,lim:150,md:''};  // md: '' | 'Bank' | 'Credit card' (13.11.
 // same choices as the decisions lists below (kept in step by hand); the 11 classifications (user 13.11.2026)
 const XO={out:[['VENDOR','CBE House'],['THOTTAM','Ammapathi Thottam'],['TAKEN','Taken by Palani / family use'],['IGNORE','Remove from the list'],['ROUNDTRIP','Round-robin – exclude for calculation']],
  in:[['CONTRIB:Palani','Put in by Palani'],['CONTRIB:Santhiya','Put in by Santhiya'],['CONTRIB:Sithambaram','Put in by Sithambaram'],
-  ['CONTRIB:Visalakshi','Put in by Visalakshi'],['MURALI_IN',"Murali's money"],['IGNORE','Not project money']],
+  ['CONTRIB:Visalakshi','Put in by Visalakshi'],['MURALI_IN',"Murali's money"],['INCOME','Income'],['IGNORE','Not project money']],
  spend:(D.cats||[]).map(c=>[c,c]).concat([['CBE Project','CBE House'],['Ammapatti Thottam','Ammapathi Thottam'],['REMOVE','Remove from the list'],['ROUNDROBIN','Round-robin – exclude for calculation']])};
 const xSel=t=>`<select class="xc" data-ck="${esc(t.ck)}" aria-label="Change classification of this payment"><option value="">${esc(t.c)}</option>`+
  `<optgroup label="${t.co==='spend'?'Change for every payment to this payee':'Change this payment'}">`+
@@ -337,7 +337,7 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
 (()=>{const P=D.pend||{cbe:[],thot:[],spend:[]};
  const OPT={out:[['TAKEN','Taken by Palani / family use'],['VENDOR','CBE house expense'],['THOTTAM','Ammapatti thottam'],['IGNORE','Came back / not real spending']],
   in:[['CONTRIB:Palani','Put in by Palani'],['CONTRIB:Santhiya','Put in by Santhiya'],['CONTRIB:Sithambaram','Put in by Sithambaram'],
-   ['CONTRIB:Visalakshi','Put in by Visalakshi'],['MURALI_IN',"Murali's money"],['IGNORE','Not project money']],
+   ['CONTRIB:Visalakshi','Put in by Visalakshi'],['MURALI_IN',"Murali's money"],['INCOME','Income'],['IGNORE','Not project money']],
   thot:[['yes','Yes, Ammapatti thottam'],['no','No, not thottam']],
   spend:(D.cats||[]).map(c=>[c,c]).concat([['CBE Project','CBE House'],['Ammapatti Thottam','Ammapathi Thottam'],['REMOVE','Remove from the list'],['ROUNDROBIN','Round-robin – exclude for calculation']])};
  let dec={};try{dec=JSON.parse(localStorage.getItem('fl_dec')||'{}')}catch(e){}

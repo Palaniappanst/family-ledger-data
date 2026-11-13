@@ -516,7 +516,7 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
 (()=>{const P=D.pend||{cbe:[],thot:[],spend:[]};
  const OPT={out:[['TAKEN','Taken by Palani / family use'],['VENDOR','CBE house expense'],['THOTTAM','Ammapatti thottam'],['IGNORE','Came back / not real spending']],
   in:[['CONTRIB:Palani','Put in by Palani'],['CONTRIB:Santhiya','Put in by Santhiya'],['CONTRIB:Sithambaram','Put in by Sithambaram'],
-   ['CONTRIB:Visalakshi','Put in by Visalakshi'],['MURALI_IN',"Murali's money"],['IGNORE','Not project money']],
+   ['CONTRIB:Visalakshi','Put in by Visalakshi'],['MURALI_IN',"Murali's money"],['INCOME','Income'],['IGNORE','Not project money']],
   thot:[['yes','Yes, Ammapatti thottam'],['no','No, not thottam']],
   spend:(D.cats||[]).map(c=>[c,c]).concat([['CBE Project','CBE House'],['Ammapatti Thottam','Ammapathi Thottam'],['REMOVE','Remove from the list'],['ROUNDROBIN','Round-robin – exclude for calculation']])};
  let dec={};try{dec=JSON.parse(localStorage.getItem('fl_dec')||'{}')}catch(e){}
