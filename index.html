@@ -528,8 +528,8 @@ const xCardRows=rows=>rows.map(r=>`<tr><td class="d">${fd(r[0])}</td><td class="
   P.cbe.map(([k,d,a,v,t,io])=>`<div class="row${dec[k]?' done':''}"><span>${fd(d)} · ${esc(a)}<br><span class="dim small">${esc(t)}</span></span><span class="n">${io==='in'?'+':''}${inr(v)}</span>${sel(k,OPT[io])}</div>`));
  box('pd-thot','','Payees paid for the thottam at least once, whose other payments carry no thottam tag.',
   P.thot.map(([n,c,v,t])=>`<div class="row${dec['thot:'+n]?' done':''}"><span>${esc(n)} · ${c} payments<br><span class="dim small">${esc(t)}</span></span><span class="n">${inr(v)}</span>${sel('thot:'+n,OPT.thot)}</div>`));
- box('pd-spend','','Payees no rule recognises, largest first. Your choice applies to all their payments.',
-  P.spend.map(([n,c,v,t])=>`<div class="row${dec['payee:'+n]?' done':''}"><span>${esc(n)} · ${c} payments<br><span class="dim small">${esc(t)}</span></span><span class="n">${inr(v)}</span>${sel('payee:'+n,OPT.spend)}</div>`));
+ box('pd-spend','','Payments no rule recognises, newest first. Your choice applies to that payment only.',
+  P.spend.map(([k,d,a,v,t])=>`<div class="row${dec['cat:'+k]?' done':''}"><span>${fd(d)} · ${esc(a)}<br><span class="dim small">${esc(t)}</span></span><span class="n">${inr(v)}</span>${sel('cat:'+k,OPT.spend)}</div>`));
  document.addEventListener('change',e=>{const s=e.target.closest('select[data-dk]');if(!s)return;
   if(s.value)dec[s.dataset.dk]=s.value;else delete dec[s.dataset.dk];s.closest('.row').classList.toggle('done',!!s.value);save()});
  const txt=()=>'# Family ledger decisions '+new Date().toLocaleString('en-GB')+'\n'+Object.entries(dec).map(([k,v])=>k+'\t'+v).join('\n')+'\n';
