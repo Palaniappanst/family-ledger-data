@@ -197,7 +197,7 @@ D.tx.forEach(t=>{if(thotIds.has(t.id))return;let c,inn=false;
 (D.thot_rows||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'Ammapatti thottam',n:r[4]||''}));
 (D.recent||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:r[5]||'Not yet in a statement',n:'from bank alert / SMS',md:r[4]||'Bank',
  ck:r[2]==='Not named in alert'?'':'payee:'+r[2],co:'spend'}));
-(D.income||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[4]||'Salary',v:r[2],c:'Salary',inn:true,n:r[3]||''}));
+(D.income||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[4]||'Salary',v:r[2],c:r[4]==='Lent money received back'?r[4]:'Salary',inn:true,n:r[3]||''}));
 T.sort((x,y)=>x.d<y.d?1:x.d>y.d?-1:y.v-x.v);
 
 // tap registry: any element with data-i runs GO[i]
