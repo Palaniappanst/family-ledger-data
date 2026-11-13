@@ -193,7 +193,21 @@ function flAsk(msg){return new Promise(ok=>{const o=document.createElement('div'
  style="font:inherit;font-size:20px;padding:8px;background:var(--bg);color:var(--chalk);border:1px solid var(--line)"><button>Open</button></form>`;
  document.body.appendChild(o);const i=o.querySelector('input');i.focus();
  o.querySelector('form').onsubmit=ev=>{ev.preventDefault();o.remove();ok(i.value.trim())}})}
+// 13.11.2026 family app (FL_LOCK): PIN on EVERY open. PIN + unlocked figures live only in sessionStorage
+// (gone when the app is reopened - MainActivity clears it); only the still-encrypted file is kept for offline.
+const SS={get:k=>{try{return sessionStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{sessionStorage.setItem(k,v)}catch(e){}}};
+async function flLock(d){let e=null;
+ try{const r=await fetch(FL_URL+'?t='+Date.now(),{cache:'no-store'});if(r.ok){e=await r.json();FL.set('fl_enc',JSON.stringify(e))}}catch(err){}
+ if(!e)try{e=JSON.parse(FL.get('fl_enc')||'null')}catch(err){}
+ if(!e)return;
+ if(d){if(e.ts<=(d.generated_ts||0))return;   // unlocked this session: just pick up newer figures
+  try{SS.set('fl_data',JSON.stringify(await flDec(e,SS.get('fl_pin'))));location.reload()}catch(err){}return}
+ let msg='Enter the family PIN';
+ for(;;){const pin=await flAsk(msg);
+  try{const x=await flDec(e,pin);SS.set('fl_pin',pin);SS.set('fl_data',JSON.stringify(x));location.reload();return}
+  catch(err){msg='Wrong PIN, try again'}}}
 async function flUpdate(d){if(!window.FL_URL)return;
+ if(window.FL_LOCK)return flLock(d);
  try{const r=await fetch(FL_URL+'?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const e=await r.json();
   if(d&&e.ts<=(d.generated_ts||0))return;
   let pin=FL.get('fl_pin'),msg='Enter the family PIN to see the latest figures';
@@ -202,7 +216,8 @@ async function flUpdate(d){if(!window.FL_URL)return;
    catch(err){pin=null;FL.del('fl_pin');msg='Wrong PIN, try again'}}}
  catch(err){/* offline: keep showing the last copy */}}
 const D0=null;
-const D=flPick(D0);
+if(window.FL_LOCK){FL.del('fl_pin');FL.del('fl_data')}  // older app versions kept these on the phone
+const D=window.FL_LOCK?(()=>{try{return JSON.parse(SS.get('fl_data')||'null')}catch(e){return null}})():flPick(D0);
 flUpdate(D);
 if(!D)throw new Error('waiting for the PIN');
 const inr=x=>{const n=Math.round(Math.abs(x)),s=n.toString();const o=s.length>3?s.slice(0,-3).replace(/\B(?=(\d{2})+(?!\d))/g,',')+','+s.slice(-3):s;return(x<0?'−':'')+'₹'+o};
