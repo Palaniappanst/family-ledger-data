@@ -213,8 +213,12 @@ function flAsk(msg){return new Promise(ok=>{const o=document.createElement('div'
 // 13.11.2026 family app (FL_LOCK): PIN on EVERY open. PIN + unlocked figures live only in sessionStorage
 // (gone when the app is reopened - MainActivity clears it); only the still-encrypted file is kept for offline.
 const SS={get:k=>{try{return sessionStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{sessionStorage.setItem(k,v)}catch(e){}}};
+// 13.11.2026: family app reads through the GitHub API first (no 5-minute raw.githubusercontent cache, so a
+// refresh shows up at once); falls back to the raw URL if the API is unreachable or rate-limited (60/hour).
+async function flGet(){if(window.FL_API){try{const r=await fetch(FL_API,{cache:'no-store',headers:{Accept:'application/vnd.github.raw'}});if(r.ok)return r}catch(e){}}
+ return fetch(FL_URL+'?t='+Date.now(),{cache:'no-store'})}
 async function flLock(d){let e=null;
- try{const r=await fetch(FL_URL+'?t='+Date.now(),{cache:'no-store'});if(r.ok){e=await r.json();FL.set('fl_enc',JSON.stringify(e))}}catch(err){}
+ try{const r=await flGet();if(r.ok){e=await r.json();FL.set('fl_enc',JSON.stringify(e))}}catch(err){}
  if(!e)try{e=JSON.parse(FL.get('fl_enc')||'null')}catch(err){}
  if(!e)return;
  if(d){if(e.ts<=(d.generated_ts||0))return;   // unlocked this session: just pick up newer figures

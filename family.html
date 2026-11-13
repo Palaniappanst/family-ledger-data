@@ -67,6 +67,8 @@ details.li-d>summary.li{border-top:0}details.li-d[open] .chev{transform:rotate(4
 #decbar[hidden],#decout[hidden]{display:none}
 #decbar button,#decout button{border:0;border-radius:10px;padding:9px 14px;background:#fff;color:var(--navy);font-weight:700}
 #decout{padding:18px;margin-top:12px}#decout .btns{display:flex;gap:8px;margin-top:10px}
+.refresh{margin-top:12px;border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:6px 14px;background:transparent;color:#fff;font-weight:600;font-size:13px}
+.refresh:disabled{opacity:.75}
 /* Projects > Plan editor */
 .pe{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
 .pe span{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:var(--dim);font-size:13px}
@@ -85,6 +87,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visi
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style></head><body><main>
 <div class="tab" id="t-home"><div class="top"><div class="brand"><span>Fam's Finance</span><small id="upd"></small></div>
+ <button id="refresh" class="refresh" aria-label="Read new SMS and mail now">↻ Refresh</button>
  <div class="lbl">We own</div><div class="big" id="h-own"></div><div class="note" id="h-note"></div><button class="strip" id="h-owe"></button></div>
  <h2>What's happening</h2><div id="h-hap"></div>
  <h2>Summary</h2><div class="chips" id="h-chips" role="group" aria-label="Summary view"></div><div class="card" id="h-list"></div>
@@ -98,7 +101,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visi
 <div class="tab" id="t-txn" hidden><div class="top"><div class="brand"><span>Transactions</span><small id="x-cnt"></small></div>
  <div class="lbl" id="x-lbl">Paid out</div><div class="big" id="x-out"></div><div class="note" id="x-in"></div></div>
  <div class="search"><input type="search" id="x-q" placeholder="Search payee or narration" aria-label="Search transactions"><select id="x-m" aria-label="Month"></select></div>
- <div id="x-x"></div><div class="chips" id="x-chips" role="group" aria-label="Classification"></div>
+ <div id="x-x"></div><div class="chips" id="x-mode" role="group" aria-label="Paid by"></div><div class="chips" id="x-chips" role="group" aria-label="Classification"></div>
  <div class="card pend" id="x-dec" hidden><section id="pd-cbe" hidden></section><section id="pd-thot" hidden></section><section id="pd-spend" hidden></section></div>
  <div class="card tx" id="x-list"></div>
  <div id="decbar" hidden><span id="decn"></span><button id="decsend">Send my choices</button></div>
@@ -111,7 +114,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visi
 <button role="tab" data-t="assets"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg>Assets</button>
 <button role="tab" data-t="loans"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18"/></svg>Loans</button>
 <button role="tab" data-t="txn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Transactions</button></nav>
-<script>window.FL_URL="https://raw.githubusercontent.com/Palaniappanst/family-ledger-data/main/family.enc";window.FL_LOCK=1;</script>
+<script>window.FL_URL="https://raw.githubusercontent.com/Palaniappanst/family-ledger-data/main/family.enc";window.FL_LOCK=1;window.FL_API="https://api.github.com/repos/Palaniappanst/family-ledger-data/contents/family.enc";</script>
 <script>
 // self-update: the newest PIN-locked figures from GitHub replace the copy packed in the page
 const FL={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},
@@ -131,8 +134,12 @@ function flAsk(msg){return new Promise(ok=>{const o=document.createElement('div'
 // 13.11.2026 family app (FL_LOCK): PIN on EVERY open. PIN + unlocked figures live only in sessionStorage
 // (gone when the app is reopened - MainActivity clears it); only the still-encrypted file is kept for offline.
 const SS={get:k=>{try{return sessionStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{sessionStorage.setItem(k,v)}catch(e){}}};
+// 13.11.2026: family app reads through the GitHub API first (no 5-minute raw.githubusercontent cache, so a
+// refresh shows up at once); falls back to the raw URL if the API is unreachable or rate-limited (60/hour).
+async function flGet(){if(window.FL_API){try{const r=await fetch(FL_API,{cache:'no-store',headers:{Accept:'application/vnd.github.raw'}});if(r.ok)return r}catch(e){}}
+ return fetch(FL_URL+'?t='+Date.now(),{cache:'no-store'})}
 async function flLock(d){let e=null;
- try{const r=await fetch(FL_URL+'?t='+Date.now(),{cache:'no-store'});if(r.ok){e=await r.json();FL.set('fl_enc',JSON.stringify(e))}}catch(err){}
+ try{const r=await flGet();if(r.ok){e=await r.json();FL.set('fl_enc',JSON.stringify(e))}}catch(err){}
  if(!e)try{e=JSON.parse(FL.get('fl_enc')||'null')}catch(err){}
  if(!e)return;
  if(d){if(e.ts<=(d.generated_ts||0))return;   // unlocked this session: just pick up newer figures
@@ -185,7 +192,7 @@ D.tx.forEach(t=>{if(thotIds.has(t.id))return;let c,inn=false;
  T.push({d:t.d,a:t.a,p:t.t,v:t.v,c,inn,n:t.mm||''})});
 (D.spend||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:r[4],n:r[5]||''}));
 (D.thot_rows||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'Ammapatti thottam',n:r[4]||''}));
-(D.recent||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'Not yet in a statement',n:'from bank alert / SMS'}));
+(D.recent||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'Not yet in a statement',n:'from bank alert / SMS',md:r[4]||'Bank'}));
 (D.income||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[4]||'Salary',v:r[2],c:'Salary',inn:true,n:r[3]||''}));
 T.sort((x,y)=>x.d<y.d?1:x.d>y.d?-1:y.v-x.v);
 
@@ -199,15 +206,16 @@ const TABS=['home','assets','loans','txn'];
 function showTab(t){if(!TABS.includes(t))t='home';
  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
  TABS.forEach(x=>$('t-'+x).hidden=x!==t);scrollTo(0,0);try{localStorage.setItem('tab',t)}catch(e){}}
-document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{if(b.dataset.t==='txn'){X.f=null;X.c='';drawTx()}showTab(b.dataset.t)});
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{if(b.dataset.t==='txn'){X.f=null;X.c='';X.md='';drawTx()}showTab(b.dataset.t)});
 
 // ---------------- Transactions: filter by classification, month, search, or a figure tapped elsewhere
-const X={c:'',f:null,lim:150};
+const X={c:'',f:null,lim:150,md:''};  // md: '' | 'Bank' | 'Credit card' (13.11.2026, paid-by filter)
 const openTx=(label,f,c,m)=>{X.f=f?{label,f}:null;X.c=c||'';$('x-m').value=m||'';$('x-q').value='';X.lim=150;drawTx();showTab('txn')};
 const months=[...new Set(T.map(t=>t.d.slice(0,7)))].sort().reverse();
 $('x-m').innerHTML='<option value="">All months</option>'+months.map(m=>`<option value="${m}">${xMon(m)}</option>`).join('');
 function drawTx(){const q=$('x-q').value.toLowerCase(),m=$('x-m').value;
- const base=T.filter(t=>(!m||t.d.startsWith(m))&&(!X.f||X.f.f(t))&&(!q||(t.p+' '+t.n+' '+t.a+' '+t.c).toLowerCase().includes(q)));
+ const base=T.filter(t=>(!m||t.d.startsWith(m))&&(!X.f||X.f.f(t))&&(!X.md||(!t.inn&&(t.md||'Bank')===X.md))&&(!q||(t.p+' '+t.n+' '+t.a+' '+t.c).toLowerCase().includes(q)));
+ $('x-mode').innerHTML=[['','Paid by: any'],['Bank','Bank / UPI'],['Credit card','Credit card']].map(([k,l])=>`<button aria-pressed="${X.md===k}" ${go(()=>{X.md=k;X.lim=150;drawTx()})}>${l}</button>`).join('');
  const R=base.filter(t=>!X.c||t.c===X.c),out=sum(R.filter(t=>!t.inn),t=>t.v),inn=sum(R.filter(t=>t.inn),t=>t.v);
  $('x-lbl').textContent=X.f?X.f.label:(X.c||'All transactions')+(m?' · '+xMon(m):'');
  $('x-out').textContent=inr(out||inn);$('x-in').textContent=(out&&inn?`paid out · ${inr(inn)} came in · `:inn&&!out?'came in · ':'paid out · ')+R.length+' transactions';
@@ -266,7 +274,9 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
  const VEND=['Paid to Murali (Jothi)','Other vendors'],paidCBE=sum(D.tx.filter(t=>VEND.includes(t.o)),t=>t.v),PJ={p:null,m:'actual'};
  const V={
   month:()=>{const M=out.filter(t=>t.d.startsWith(mon)),tot=sum(M,t=>t.v),g={};M.forEach(t=>g[t.c]=(g[t.c]||0)+t.v);
-   return `<div class="tot"><span>Paid out in ${xMon(mon)}</span><b>${inr(tot)}</b></div>`+Object.entries(g).sort((a,b)=>b[1]-a[1]).map(([c,v])=>
+   const cc=sum(M.filter(t=>t.md==='Credit card'),t=>t.v);
+   return `<div class="tot"><span>Paid out in ${xMon(mon)}</span><b>${inr(tot)}</b></div>`+
+    (cc?li('bank','Paid by bank / UPI','',inr(tot-cc),'',()=>{X.md='Bank';openTx('',null,'',mon)})+li('wallet','Paid by credit card','swipes from card alerts',inr(cc),'',()=>{X.md='Credit card';openTx('',null,'',mon)}):'')+Object.entries(g).sort((a,b)=>b[1]-a[1]).map(([c,v])=>
     li(c,c,(tot?(v/tot*100).toFixed(1):0)+'% of the month',inr(v),'',()=>openTx('',null,c,mon))).join('')},
   // 13.11.2026 (user): Projects = pick a project first; inside, Plan (budget) | Actual (what the statements show)
   projects:()=>{const PL=D.plan||{},cbeP=sum(PL.cbe||[],r=>r[3]),thP=sum(PL.thot||[],r=>r[1]),thA=sum(T.filter(t=>t.c==='Ammapatti thottam'),t=>t.v);
@@ -330,9 +340,9 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
  const online=window.AndroidBridge&&(()=>{try{return AndroidBridge.available()}catch(e){return false}})();
  // laptop / web (13.11.2026, key-once): no Android bridge, so push the same decisions/<device>-<ts>.txt file to the
  // private inbox repo with a key pasted once and kept only in this browser. The PC applies it on its next run.
- const KEY='fl_ghkey',webPush=async t=>{let k='';try{k=localStorage.getItem(KEY)||''}catch(e){}
+ const KEY='fl_ghkey',webPush=async(t,path)=>{let k='';try{k=localStorage.getItem(KEY)||''}catch(e){}
   if(!k){k=(prompt('First time on this computer: paste the family key (Palani has it). It stays in this browser only.')||'').trim();if(!k)return 'no key - copy the text below and send it to Palani instead.'}
-  const ts=Date.now(),r=await fetch(`https://api.github.com/repos/Palaniappanst/family-ledger-sms/contents/decisions/web-${ts}.txt`,{method:'PUT',
+  const r=await fetch(`https://api.github.com/repos/Palaniappanst/family-ledger-sms/contents/${path||'decisions/web-'+Date.now()+'.txt'}`,{method:'PUT',
    headers:{Authorization:'Bearer '+k,Accept:'application/vnd.github+json'},
    body:JSON.stringify({message:'decisions from web',content:btoa(unescape(encodeURIComponent(t)))})}).catch(()=>null);
   if(r&&r.ok){try{localStorage.setItem(KEY,k)}catch(e){}return ''}
@@ -351,6 +361,14 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
  $('decclose').onclick=()=>{$('decout').hidden=true};
  $('deccopy').onclick=()=>{const t=$('dectext');navigator.clipboard&&navigator.clipboard.writeText(t.value).then(()=>{$('deccopy').textContent='Copied'},()=>{t.select()})||t.select()};
  $('decclear').onclick=()=>{dec={};save();document.querySelectorAll('select[data-dk]').forEach(s=>{s.value='';s.closest('.row').classList.remove('done')});$('decout').hidden=true};
+ // ↻ Refresh (13.11.2026): phone pushes its SMS + a refresh request (web: the request only); the PC job runs
+ // at once (mail + SMS + figures); this page then checks every 30 s and reloads itself when newer figures land
+ $('refresh').onclick=async()=>{const b=$('refresh');b.disabled=true;b.textContent='Requesting…';let ok=false;
+  if(online&&AndroidBridge.refreshNow){try{ok=AndroidBridge.refreshNow()}catch(e){}}
+  else ok=!(await webPush('refresh\n','refresh/web-'+Date.now()+'.txt'));
+  if(!ok){b.textContent='↻ Refresh (could not reach the PC - try again)';b.disabled=false;return}
+  b.textContent='Reading SMS & mail… new figures in a few minutes';let n=0;
+  const iv=setInterval(()=>{if(++n>20){clearInterval(iv);b.textContent='↻ Refresh';b.disabled=false;return}try{flLock(D)}catch(e){}},30000)};
  // used by the Projects > Plan editor (13.11.2026): plan edits travel with the other choices
  window.addDec=(k,v)=>{dec[k]=String(v);save()};
  window.sendDec=async()=>{await $('decsend').onclick();
