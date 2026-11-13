@@ -257,11 +257,20 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
  const now=new Date(),mon=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`,emiM=T.filter(t=>t.c==='EMI'&&t.d.startsWith(mon));
  $('l-emi').innerHTML=`<span>EMIs paid in ${xMon(mon)}: <b>${inr(sum(emiM,t=>t.v))}</b></span><span class="chev"></span>`;$('l-emi').setAttribute('data-i',GO.push(()=>openTx('EMIs, '+xMon(mon),null,'EMI',mon))-1);
  let r=li('bank','Canara home loan',`of ${inr(h.sanction)} sanctioned`,inr(h.received),h.sanction?Math.round(h.received*100/h.sanction)+'% received':'',()=>openTx('Home loan received',null,'Home loan received'));
- hdfc.forEach(x=>r+=li('bank',x.name,`EMI ${inr(x.emi)} at ${x.rate}%`,inr(x.outstanding),'of '+inr(x.sanction),()=>openTx(x.name+', EMIs of '+inr(x.emi),t=>t.c==='EMI'&&Math.round(t.v)===Math.round(x.emi))));  // HDFC EMI debits carry no loan number
+ const HN={'661772839':'Housing loan 1','701472241':'Housing loan 2','703012145':'Housing loan 3'};  // user's names, 13.11.2026
+ hdfc.forEach(x=>r+=li('bank',HN[x.acct]||x.name,`${HN[x.acct]?x.name+' · ':''}EMI ${inr(x.emi)} at ${x.rate}%`,inr(x.outstanding),'of '+inr(x.sanction),()=>openTx(x.name+', EMIs of '+inr(x.emi),t=>t.c==='EMI'&&Math.round(t.v)===Math.round(x.emi))));  // HDFC EMI debits carry no loan number
  od.forEach(x=>r+=li('wallet',x.name,'overdrawn, as on '+fd(x.date),inr(x.amount),'',()=>openTx(x.name,t=>t.a===x.name.replace(/ overdraw*.*$/i,''))));
- if(gold)r+=li('gift','Gold loan (Palani)','assumed unpaid',inr(gold),'',()=>openTx('Gold loan',null,'Gold loan received'));
- JL.forEach(l=>r+=li('gift','IOB jewel loan …'+l.ref,l.who+', taken '+fd(l.date),inr(l.amt),inr(l.paid)+' paid',()=>openTx('IOB jewel loans',keyset(L.jewel||[]))));
- Object.entries(L.emi||{}).filter(([k])=>!/^IOB jewel loan/.test(k)).forEach(([k,rows])=>r+=li('bank',k,rows.length+' EMIs paid, balance not known','—',inr(sum(rows,x=>x[1]))+' paid',()=>openTx(k,keyset(rows))));
+ if(gold)r+=li('gift','Gold loan Canara bank','Palani, assumed unpaid',inr(gold),'',()=>openTx('Gold loan',null,'Gold loan received'));
+ const JN={'4356':'Santhiya Gold loan IOB','4355':'Gold loan Sithambaram'};  // user's names, 13.11.2026
+ JL.forEach(l=>r+=li('gift',JN[l.ref]||'IOB jewel loan …'+l.ref,'IOB …'+l.ref+' in '+l.who+"'s account, taken "+fd(l.date),inr(l.amt),inr(l.paid)+' paid',()=>openTx('IOB jewel loans',keyset(L.jewel||[]))));
+ // 13.11.2026 (user): 'Hdfc Bank (..)' ACH lines are the same EMIs as the HDFC loans above - not shown twice.
+ // A lender with no payment in the 60 days before the newest statement is taken as closed: folded at the bottom.
+ const lastD=rows=>rows.reduce((m,x)=>x[0]>m?x[0]:m,''),cut=new Date(new Date(D.latest+'T00:00')-60*864e5).toISOString().slice(0,10);
+ const EM=Object.entries(L.emi||{}).filter(([k])=>!/^IOB jewel loan/.test(k)&&!(hdfc.length&&/^Hdfc Bank \(/.test(k)));
+ const eli=([k,rows])=>li('bank',k,rows.length+' EMIs paid, last '+fd(lastD(rows)),'—',inr(sum(rows,x=>x[1]))+' paid',()=>openTx(k,keyset(rows)));
+ EM.filter(([,rows])=>lastD(rows)>=cut).forEach(e=>r+=eli(e));
+ const closed=EM.filter(([,rows])=>lastD(rows)<cut);
+ if(closed.length)r+=`<details class="li-d"><summary class="li">${ic('bank')}<span><b>Closed loans</b><small>no payment in the last 60 days</small></span><span class="val">${closed.length}</span><span class="chev"></span></summary>${closed.map(eli).join('')}</details>`;
  $('l-list').innerHTML=r})();
 
 // ---------------- Assets (summary by type; tap a type for its items)
