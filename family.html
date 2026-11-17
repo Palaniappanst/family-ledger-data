@@ -181,7 +181,7 @@ const P={home:'M3 11l9-8 9 8M5 10v10h14V10',build:'M4 21V5h10v16M14 10h6v11M8 9h
 const CI={'EMI':'bank','Credit card payment':'wallet','Investment':'chart','Insurance':'shield','Interest':'bank','Interest Payment':'bank','Chit fund':'wallet','Chit repayment':'wallet','Donations':'gift','Household expenses':'home',
  'Personal expenses':'bag','School fees':'school','School Fees':'school','Travel':'car','Food':'food','Other payments':'dots','CBE House':'build','Ammapatti thottam':'leaf',
  'Home loan received':'bank','Home loan interest':'bank','Gold loan received':'bank','Put into CBE House':'inn','Taken out (Palani)':'out','To decide':'q',
- 'Not yet in a statement':'msg','Salary':'inn','Bank balance':'bank','Equity':'chart','Mutual funds':'chart','Retirement':'clock'};
+ 'Not yet in a statement':'msg','Salary':'inn','Bank balance':'bank','Equity':'chart','Mutual funds':'chart','Retirement':'clock','Round-robin':'dots'};
 const ic=k=>`<span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${P[CI[k]||k]||P.rupee}"/></svg></span>`;
 
 // one list of every transaction, each with its classification
@@ -191,7 +191,10 @@ const thotIds=new Set(D.thot_ids||[]),txIds=new Set(),T=[];
 // thottam comes from thot_rows (the thottam list), so the same payments are not taken twice from tx
 D.tx.forEach(t=>{if(thotIds.has(t.id))return;txIds.add(t.id);let c,inn=false;
  if(t.o)c=OCLS[t.o]||t.o;else{inn=true;c=t.s==='Income (gifts / other)'?'Income':t.s==='Canara home loan'?'Home loan received':/Gold loan/.test(t.s||'')?'Gold loan received':'Put into CBE House'}
- T.push({d:t.d,a:t.a,p:t.t,v:t.v,c,inn,n:t.mm||'',ck:t.k,co:inn?'in':'out',fk:t.k,fl:t.l})});
+ if(t.rr)c='Round-robin';  // 16.11.2026 (user): between family members - shown, never counted
+ T.push({d:t.d,a:t.a,p:t.t,v:t.v,c,inn,rr:t.rr,n:t.mm||'',ck:t.k,co:inn?'in':'out',fk:t.k,fl:t.l})});
+// counted in spend: not round robin, and card bills are not spend - the card swipes already are (16.11.2026, user)
+const isSpend=t=>!t.inn&&!t.rr&&t.c!=='Credit card payment';
 // ck/co (13.11.2026): the classification is a dropdown - a project row's choice is saved for that row,
 // a personal payment's choice for its payee (all its payments, now and later)
 (D.spend||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:r[4],n:r[5]||'',ck:'payee:'+r[2],co:'spend',fk:r[6]}));
@@ -242,7 +245,8 @@ function drawTx(){const q=$('x-q').value.toLowerCase(),m=$('x-m').value;
  const base=T.filter(t=>(!m||t.d.startsWith(m))&&(!X.f||X.f.f(t))&&(!X.md||(!t.inn&&(t.md||'Bank')===X.md))&&(!X.rv||(t.fk&&!FIN.has(t.fk)))&&(!q||(t.p+' '+t.n+' '+t.a+' '+t.c).toLowerCase().includes(q)));
  $('x-mode').innerHTML=[['','Paid by: any'],['Bank','Bank / UPI'],['Credit card','Credit card']].map(([k,l])=>`<button aria-pressed="${X.md===k}" ${go(()=>{X.md=k;X.lim=150;drawTx()})}>${l}</button>`).join('')+
   `<button aria-pressed="${X.rv}" ${go(()=>{X.rv=!X.rv;X.lim=150;drawTx()})}>Not reviewed only</button>`;
- const R=base.filter(t=>!X.c||t.c===X.c),out=sum(R.filter(t=>!t.inn),t=>t.v),inn=sum(R.filter(t=>t.inn),t=>t.v);
+ // round robin / card bills only add up when that chip itself is picked (16.11.2026)
+ const R=base.filter(t=>!X.c||t.c===X.c),out=sum(R.filter(t=>!t.inn&&(X.c||isSpend(t))),t=>t.v),inn=sum(R.filter(t=>t.inn&&(X.c||!t.rr)),t=>t.v);
  $('x-lbl').textContent=X.f?X.f.label:(X.c||'All transactions')+(m?' · '+xMon(m):'');
  $('x-out').textContent=inr(out||inn);$('x-in').textContent=(out&&inn?`paid out · ${inr(inn)} came in · `:inn&&!out?'came in · ':'paid out · ')+R.length+' transactions';
  $('x-cnt').textContent=months.length?'Statements to '+fd(D.latest):'';
@@ -304,17 +308,29 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
  $('h-owe').innerHTML=`<span>We owe <b>${inr(owe)}</b></span><span class="chev"></span>`;$('h-owe').setAttribute('data-i',GO.push(()=>showTab('loans'))-1);
  const now=new Date(),pad=n=>String(n).padStart(2,'0'),today=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
  const out=T.filter(t=>!t.inn),mon=months.includes(today.slice(0,7))?today.slice(0,7):(months[0]||today.slice(0,7));
- const decN=D.pend.cbe.length+D.pend.thot.length+D.pend.spend.length,tod=out.filter(t=>t.d===today);
+ const decN=D.pend.cbe.length+D.pend.thot.length+D.pend.spend.length,tod=out.filter(t=>t.d===today&&isSpend(t));
  const hap=(k,b,s,f)=>`<button class="card happen" ${go(f)}>${ic(k)}<div><b>${b}</b><span>${s}</span></div><span class="chev"></span></button>`;
  $('h-hap').innerHTML=(decN?hap('q',decN+' items to decide','Pick a tag so they are counted right',()=>openTx('',null,'To decide')):'')+
-  hap('rupee','Paid today '+inr(sum(tod,t=>t.v)),tod.length+' payment'+(tod.length===1?'':'s')+' so far',()=>openTx('Paid today',t=>t.d===today&&!t.inn));
+  hap('rupee','Paid today '+inr(sum(tod,t=>t.v)),tod.length+' payment'+(tod.length===1?'':'s')+' so far',()=>{X.md='';openTx('Paid today',t=>t.d===today&&isSpend(t))});
  const VEND=['Paid to Murali (Jothi)','Other vendors'],paidCBE=sum(D.tx.filter(t=>VEND.includes(t.o)),t=>t.v),PJ={p:null,m:'actual'};
+ // 16.11.2026 (user): Palani consumed (CBE) = home loan taken - given to Murali (incl. vendor payments)
+ const consumed=(D.loan_bank||0)-paidCBE;
+ const ot=(md,...a)=>{X.md=md;openTx(...a)};
+ // 16.11.2026 (user): Home = total spend of the month, by card, by cash & UPI, then these heads; card bills apart
+ const HEADS=[['Investment','Investment'],['EMI','EMI'],['Donations','Donations'],['Household expenses','Household expenses'],['Ammapatti thottam','Thottam']];
+ const isHead=c=>HEADS.some(([h])=>h===c);
  const V={
-  month:()=>{const M=out.filter(t=>t.d.startsWith(mon)),tot=sum(M,t=>t.v),g={};M.forEach(t=>g[t.c]=(g[t.c]||0)+t.v);
-   const cc=sum(M.filter(t=>t.md==='Credit card'),t=>t.v);
-   return `<div class="tot"><span>Paid out in ${xMon(mon)}</span><b>${inr(tot)}</b></div>`+
-    (cc?li('bank','Paid by bank / UPI','',inr(tot-cc),'',()=>{X.md='Bank';openTx('',null,'',mon)})+li('wallet','Paid by credit card','swipes from card alerts',inr(cc),'',()=>{X.md='Credit card';openTx('',null,'',mon)}):'')+Object.entries(g).sort((a,b)=>b[1]-a[1]).map(([c,v])=>
-    li(c,c,(tot?(v/tot*100).toFixed(1):0)+'% of the month',inr(v),'',()=>openTx('',null,c,mon))).join('')},
+  month:()=>{const M=out.filter(t=>t.d.startsWith(mon)),S=M.filter(isSpend),tot=sum(S,t=>t.v),g={};S.forEach(t=>g[t.c]=(g[t.c]||0)+t.v);
+   const card=sum(S.filter(t=>t.md==='Credit card'),t=>t.v),bills=sum(M.filter(t=>t.c==='Credit card payment'),t=>t.v);
+   const restC=Object.keys(g).filter(c=>!isHead(c)).sort((a,b)=>g[b]-g[a]),rest=sum(restC,c=>g[c]);
+   const pc=v=>(tot?(v/tot*100).toFixed(1):0)+'% of the month';
+   return `<div class="tot"><span>Total spend in ${xMon(mon)}</span><b>${inr(tot)}</b></div>`+
+    li('wallet','Spend by card','card swipes',inr(card),pc(card),()=>ot('Credit card','Card spend, '+xMon(mon),isSpend,'',mon))+
+    li('rupee','Spend by cash & UPI','bank, UPI and cash',inr(tot-card),pc(tot-card),()=>ot('Bank','Cash & UPI spend, '+xMon(mon),isSpend,'',mon))+
+    HEADS.map(([c,l])=>li(c,l,pc(g[c]||0),inr(g[c]||0),'',()=>ot('','',null,c,mon))).join('')+
+    (rest?li('dots','Everything else',restC.join(', '),inr(rest),pc(rest),()=>ot('','Everything else, '+xMon(mon),t=>isSpend(t)&&!isHead(t.c),'',mon)):'')+
+    `<div class="tot"><span>Credit card bills paid · not counted in spend</span><b>${inr(bills)}</b></div>`+
+    li('wallet','Credit card bills',"the swipes are already in this month's spend",inr(bills),'',()=>ot('','',null,'Credit card payment',mon))},
   // 13.11.2026 (user): Projects = pick a project first; inside, Plan (budget) | Actual (what the statements show)
   projects:()=>{const PL=D.plan||{},cbeP=sum(PL.cbe||[],r=>r[3]),thP=sum(PL.thot||[],r=>r[1]),thA=sum(T.filter(t=>t.c==='Ammapatti thottam'),t=>t.v);
    if(!PJ.p)return li('build','CBE House',cbeP?'plan '+inr(cbeP):'Coimbatore',inr(paidCBE),'paid so far',()=>{PJ.p='cbe';PJ.m='actual';draw()})+
@@ -343,7 +359,7 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
     li('build','Paid to Murali and vendors',cbeP?'budget '+inr(cbeP):'',inr(paidCBE),inr(D.contract-paidCBE)+' still to pay Murali',()=>openTx('',null,'CBE House'))+
     li('inn','Put into CBE House','family money into the project',inr(sum(T.filter(t=>t.c==='Put into CBE House'),t=>t.v)),'',()=>openTx('',null,'Put into CBE House'),true)+
     li('bank','Home loan received','Canara',inr(D.loan_bank),D.loan_sanction?'of '+inr(D.loan_sanction):'',()=>openTx('',null,'Home loan received'))+
-    li('out','Taken out (Palani)','from the project accounts',inr(sum(T.filter(t=>t.c==='Taken out (Palani)'),t=>t.v)),'',()=>openTx('',null,'Taken out (Palani)'));
+    li('out','Consumed by Palani','home loan taken − given to Murali & vendors',inr(consumed),'',()=>openTx('',null,'Home loan received'));
    if(PJ.m==='plan')return head+`<div class="tot"><span>Ammapatti · budget</span><b>${inr(thP)}</b></div>`+
     ((PL.thot||[]).map(([n,cost,paid,bal,st])=>li('leaf',n,st+(bal>0?' · '+inr(bal)+' balance':''),inr(cost),inr(paid)+' paid')).join('')||
      '<p class="dim" style="padding:20px">No plan found - keep the "Thottam" sheet in Downloads\\2026 expenses.xlsx.</p>')+
@@ -413,6 +429,5 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
  bar()})();
 
 drawTx();
-let startTab='home';try{startTab=localStorage.getItem('tab')||'home'}catch(e){}
-showTab(location.hash.slice(1)||startTab);
+showTab('home');  // 16.11.2026 (user): every open starts on Home, not the last tab used
 </script></body></html>
