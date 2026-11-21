@@ -185,7 +185,7 @@ const CI={'EMI':'bank','Credit card payment':'wallet','Investment':'chart','Insu
 const ic=k=>`<span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${P[CI[k]||k]||P.rupee}"/></svg></span>`;
 
 // one list of every transaction, each with its classification
-const OCLS={'Paid to Murali (Jothi)':'CBE House','Landowners - land money':'Landowners - land money','Loan interest (10K/month)':'Loan interest (10K/month)','Other vendors':'CBE House','Loan interest & charges':'Home loan interest','IOB jewel loan repayments':'EMI',
+const OCLS={'Paid to Murali (Jothi)':'CBE House','Landowners - land money':'Landowners - land money','Loan interest (10K/month)':'Loan interest (10K/month)','Landowners - their expenses':'Landowners - their expenses','Other vendors':'CBE House','Loan interest & charges':'Home loan interest','IOB jewel loan repayments':'EMI',
  'Palani taken':'Taken out (Palani)','Palani personal':'Household expenses','Awaiting decision':'To decide','Other withdrawals':'To decide','Thottam (Palani)':'Ammapatti thottam'};
 const thotIds=new Set(D.thot_ids||[]),txIds=new Set(),T=[];
 // thottam comes from thot_rows (the thottam list), so the same payments are not taken twice from tx
@@ -321,7 +321,11 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
   hap('rupee','Paid today '+inr(sum(tod,t=>t.v)),tod.length+' payment'+(tod.length===1?'':'s')+' so far',()=>{X.md='';openTx('Paid today',t=>t.d===today&&isSpend(t))});
  const VEND=['Paid to Murali (Jothi)','Other vendors'],paidCBE=sum(D.tx.filter(t=>VEND.includes(t.o)),t=>t.v),PJ={p:null,m:'actual'};
  // 16.11.2026 (user): Palani consumed (CBE) = home loan taken - given to Murali (incl. vendor payments)
- const consumed=(D.loan_bank||0)-paidCBE;
+ // 21.11.2026 (user): landowner money (₹50L, via Murali) also leaves the loan; cash rows come from Santhiya's sheet
+ const landBank=sum(T.filter(t=>t.c==='Landowners - land money'),t=>t.v),landCash=sum((D.land_manual||[]).filter(r=>r[1]>=25000),r=>r[1]),landPaid=landBank+landCash;
+ const landExp=sum(T.filter(t=>t.c==='Landowners - their expenses'),t=>t.v)+sum((D.land_manual||[]).filter(r=>r[1]<25000),r=>r[1]);
+ const landInt=sum(T.filter(t=>t.c==='Loan interest (10K/month)'),t=>t.v);
+ const consumed=(D.loan_bank||0)-paidCBE-landPaid;
  const ot=(md,...a)=>{X.md=md;openTx(...a)};
  // 16.11.2026 (user): Home = total spend of the month, by card, by cash & UPI, then these heads; card bills apart
  const HEADS=[['Investment','Investment'],['EMI','EMI'],['Donations','Donations'],['Household expenses','Household expenses'],['Ammapatti thottam','Thottam']];
@@ -362,11 +366,13 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
      `<div class="pe-btns"><button ${go(()=>{PJ.e=true;draw()})}>Edit budget</button></div>`+
      `<div class="tot"><span>Spent so far (Actual)</span><b>${inr(paidCBE)}</b></div>`+
      `<p class="dim small" style="padding:0 16px 14px">Your edits show here at once; everyone else sees them after the next refresh (about 15 minutes).</p>`}
-   if(PJ.p==='cbe')return head+`<div class="tot"><span>CBE House · actual</span><b>${inr(paidCBE)}</b></div>`+
-    li('build','Paid to Murali and vendors',cbeP?'budget '+inr(cbeP):'',inr(paidCBE),inr(D.contract-paidCBE)+' still to pay Murali',()=>openTx('',null,'CBE House'))+
-    li('inn','Put into CBE House','family money into the project',inr(sum(T.filter(t=>t.c==='Put into CBE House'),t=>t.v)),'',()=>openTx('',null,'Put into CBE House'),true)+
-    li('bank','Home loan received','Canara',inr(D.loan_bank),D.loan_sanction?'of '+inr(D.loan_sanction):'',()=>openTx('',null,'Home loan received'))+
-    li('out','Consumed by Palani','home loan taken − given to Murali & vendors',inr(consumed),'',()=>openTx('',null,'Home loan received'));
+   // 21.11.2026 (user): received from bank -> given to Murali & vendors -> landowners -> difference held by Palani
+   if(PJ.p==='cbe')return head+`<div class="tot"><span>Received from bank</span><b>${inr(D.loan_bank)}</b></div>`+
+    li('bank','Home loan received','Canara',inr(D.loan_bank),D.loan_sanction?'of '+inr(D.loan_sanction):'',()=>openTx('',null,'Home loan received'),true)+
+    li('build','Given to Murali & vendors',cbeP?'budget '+inr(cbeP):'',inr(paidCBE),inr(D.contract-paidCBE)+' still to pay Murali',()=>openTx('',null,'CBE House'))+
+    li('build','Paid to landowners',`bank ${inr(landBank)} + cash per Santhiya's sheet ${inr(landCash)}`,inr(landPaid),'of ₹50L · '+inr(5000000-landPaid)+' to go',()=>openTx('',null,'Landowners - land money'))+
+    li('out','Held by Palani','received − Murali & vendors − landowners',inr(consumed),'',()=>openTx('',null,'Home loan received'))+
+    `<p class="dim small" style="padding:6px 16px 14px">Kept apart from the land money: loan interest (₹10K/month) ${inr(landInt)}, and money for the landowners' own expenses (under ₹25K) ${inr(landExp)}.</p>`;
    if(PJ.m==='plan')return head+`<div class="tot"><span>Ammapatti · budget</span><b>${inr(thP)}</b></div>`+
     ((PL.thot||[]).map(([n,cost,paid,bal,st])=>li('leaf',n,st+(bal>0?' · '+inr(bal)+' balance':''),inr(cost),inr(paid)+' paid')).join('')||
      '<p class="dim" style="padding:20px">No plan found - keep the "Thottam" sheet in Downloads\\2026 expenses.xlsx.</p>')+
