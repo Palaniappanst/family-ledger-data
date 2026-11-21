@@ -312,7 +312,12 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
  const out=T.filter(t=>!t.inn),mon=months.includes(today.slice(0,7))?today.slice(0,7):(months[0]||today.slice(0,7));
  const decN=D.pend.cbe.length+D.pend.thot.length+D.pend.spend.length,tod=out.filter(t=>t.d===today&&isSpend(t));
  const hap=(k,b,s,f)=>`<button class="card happen" ${go(f)}>${ic(k)}<div><b>${b}</b><span>${s}</span></div><span class="chev"></span></button>`;
- $('h-hap').innerHTML=(decN?hap('q',decN+' items to decide','Pick a tag so they are counted right',()=>openTx('',null,'To decide')):'')+
+ // 21.11.2026: figures older than 2h = the phone that makes them is off; dues in the next 10 days
+ const stale=Date.now()/1000-(D.generated_ts||0)>7200,dIn=r=>Math.round((new Date(r.due+'T00:00')-new Date(today+'T00:00'))/864e5);
+ const dues=(D.reminders||[]).filter(r=>dIn(r)>=0&&dIn(r)<=10);
+ $('h-hap').innerHTML=(stale?hap('q','Figures may be out of date','Last updated '+D.generated+'. The phone that updates them may be off or without internet.',()=>{}):'')+
+  dues.map(r=>hap('bank',(r.amount?inr(r.amount)+' · ':'')+esc(r.what),'Due '+fd(r.due)+(dIn(r)===0?' (today)':` (in ${dIn(r)} day${dIn(r)===1?'':'s'})`),()=>{})).join('')+
+  (decN?hap('q',decN+' items to decide','Pick a tag so they are counted right',()=>openTx('',null,'To decide')):'')+
   hap('rupee','Paid today '+inr(sum(tod,t=>t.v)),tod.length+' payment'+(tod.length===1?'':'s')+' so far',()=>{X.md='';openTx('Paid today',t=>t.d===today&&isSpend(t))});
  const VEND=['Paid to Murali (Jothi)','Other vendors'],paidCBE=sum(D.tx.filter(t=>VEND.includes(t.o)),t=>t.v),PJ={p:null,m:'actual'};
  // 16.11.2026 (user): Palani consumed (CBE) = home loan taken - given to Murali (incl. vendor payments)
