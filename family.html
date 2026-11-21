@@ -420,8 +420,10 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
    if(!ok)err='no internet or GitHub refused it - try again in a minute.'}
   else err=await webPush(t);
   b.disabled=false;
-  if(!err){$('decout').hidden=true;$('decn').textContent='✓ Sent - applied on the next refresh (about 15 minutes), then everyone sees it';
-   try{localStorage.setItem('fl_dec_sent',JSON.stringify(dec))}catch(e){}return}
+  // 21.11.2026 (user): once sent, clear the list for the next set, and reload by itself when the new figures land
+  if(!err){$('decout').hidden=true;try{localStorage.setItem('fl_dec_sent',JSON.stringify(dec))}catch(e){}
+   dec={};save();$('decbar').hidden=false;$('decn').textContent='✓ Sent - new figures in a few minutes, this page reloads by itself';
+   let n=0;const iv=setInterval(()=>{if(++n>20){clearInterval(iv);bar();return}try{flLock(D)}catch(e){}},30000);return}
   $('dectext').value=t;$('decnote').textContent='Not sent: '+err+' As a backup you can copy this and send it to Palani.';
   $('decout').hidden=false;$('decout').scrollIntoView();$('decn').textContent='Not sent'};
  $('decclose').onclick=()=>{$('decout').hidden=true};
