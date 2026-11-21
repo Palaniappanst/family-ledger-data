@@ -100,6 +100,9 @@ button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visi
 <div class="tab" id="t-loans" hidden><div class="top"><div class="brand"><span>Loans</span></div>
  <div class="lbl">We owe</div><div class="big" id="l-tot"></div><div class="note" id="l-note"></div><button class="strip" id="l-emi"></button></div>
  <h2>Your loans</h2><div class="card" id="l-list"></div><p class="foot">Bank statements show money moving, not loan balances. HDFC figures follow HDFC's loan summaries plus EMIs paid since.</p></div>
+<div class="tab" id="t-recv" hidden><div class="top"><div class="brand"><span>Receivables</span></div>
+ <div class="lbl">To receive</div><div class="big" id="r-tot"></div><div class="note" id="r-note"></div></div>
+ <h2>Money due to us</h2><div class="card" id="r-list"></div><p class="foot">Also counted in Assets. Tell Palani when someone pays back, so the amount comes down.</p></div>
 <div class="tab" id="t-txn" hidden><div class="top"><div class="brand"><span>Transactions</span><small id="x-cnt"></small></div>
  <div class="lbl" id="x-lbl">Paid out</div><div class="big" id="x-out"></div><div class="note" id="x-in"></div></div>
  <div class="search"><input type="search" id="x-q" placeholder="Search payee or narration" aria-label="Search transactions"><select id="x-m" aria-label="Month"></select></div>
@@ -115,6 +118,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visi
 <button role="tab" data-t="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>Home</button>
 <button role="tab" data-t="assets"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg>Assets</button>
 <button role="tab" data-t="loans"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10l9-6 9 6M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18"/></svg>Loans</button>
+<button role="tab" data-t="recv"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg>Receivables</button>
 <button role="tab" data-t="txn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Transactions</button></nav>
 <script>window.FL_URL="https://raw.githubusercontent.com/Palaniappanst/family-ledger-data/main/family.enc";window.FL_LOCK=1;window.FL_API="https://api.github.com/repos/Palaniappanst/family-ledger-data/contents/family.enc";</script>
 <script>
@@ -213,7 +217,7 @@ document.addEventListener('click',e=>{const el=e.target.closest('[data-i]');if(e
 const li=(k,title,sub,val,vsub,f,inn)=>`<button class="li" ${f?go(f):'tabindex="-1"'}>${ic(k)}<span><b>${esc(title)}</b>${sub?`<small>${esc(sub)}</small>`:''}</span><span class="val${inn?' in':''}">${val}${vsub?`<br><small>${esc(vsub)}</small>`:''}</span><span class="chev"></span></button>`;
 
 // tabs
-const TABS=['home','assets','loans','txn'];
+const TABS=['home','assets','loans','recv','txn'];
 function showTab(t){if(!TABS.includes(t))t='home';
  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t));
  TABS.forEach(x=>$('t-'+x).hidden=x!==t);scrollTo(0,0);try{localStorage.setItem('tab',t)}catch(e){}}
@@ -304,6 +308,11 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
    return `<details class="li-d"${f?' open':''}><summary class="li">${ic(t)}<span><b>${esc(t)}</b><small>${tot?(v/tot*100).toFixed(1):'0.0'}% allocation</small></span><span class="val">${inr(v)}<br><small>${G[t].length} item${G[t].length>1?'s':''}${miss?', '+miss+' to value':''}</small></span><span class="chev"></span></summary><div class="items">${G[t].map(item).join('')}</div></details>`}).join('')||'<p class="dim" style="padding:20px">No assets yet.</p>'};
  draw()})();
 
+// 21.11.2026 (user): receivables in their own tab too - the same rows as Assets (type Receivable)
+(()=>{const R=(D.assets||[]).filter(a=>a.type==='Receivable'),tot=sum(R,a=>+a.value||0);
+ $('r-tot').textContent=inr(tot);$('r-note').textContent=R.length+' item'+(R.length===1?'':'s');
+ $('r-list').innerHTML=R.map(a=>{const i=(a.name||'').indexOf(': ');return li('wallet',i>0?a.name.slice(0,i):a.name,i>0?a.name.slice(i+2):'',inr(+a.value||0),'')}).join('')||'<p class="dim" style="padding:20px">Nothing to receive.</p>'})();
+
 // ---------------- Home (summary only)
 (()=>{const A=D.assets||[],own=sum(A,a=>+a.value||0),need=A.filter(a=>a.value==null).length;
  $('h-own').textContent=inr(own);$('h-note').textContent=need?`${need} assets still need a value, so net worth is not shown yet`:'Net worth '+inr(own-owe);
@@ -367,11 +376,17 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
      `<div class="tot"><span>Spent so far (Actual)</span><b>${inr(paidCBE)}</b></div>`+
      `<p class="dim small" style="padding:0 16px 14px">Your edits show here at once; everyone else sees them after the next refresh (about 15 minutes).</p>`}
    // 21.11.2026 (user): received from bank -> given to Murali & vendors -> landowners -> difference held by Palani
-   if(PJ.p==='cbe')return head+`<div class="tot"><span>Received from bank</span><b>${inr(D.loan_bank)}</b></div>`+
+   // 21.11.2026 (user): total investment (Palani + Murali + bank loan), then where the loan went; Canara interest apart
+   const FU=D.cbe_funding||[],fuT=sum(FU,f=>f[1]),intPaid=(D.loans&&D.loans.home||{}).interest||0;
+   if(PJ.p==='cbe')return head+`<div class="tot"><span>Total investment</span><b>${inr(fuT)}</b></div>`+
+    FU.map(([n,v])=>li(n==='Bank loan'?'bank':'rupee',n,fuT?(v/fuT*100).toFixed(1)+'% of the investment':'',inr(v),'')).join('')+
+    `<div class="tot"><span>Spent on the project</span><b>${inr(paidCBE+landPaid)}</b></div>`+
+    `<div class="tot"><span>Received from bank</span><b>${inr(D.loan_bank)}</b></div>`+
     li('bank','Home loan received','Canara',inr(D.loan_bank),D.loan_sanction?'of '+inr(D.loan_sanction):'',()=>openTx('',null,'Home loan received'),true)+
     li('build','Given to Murali & vendors',cbeP?'budget '+inr(cbeP):'',inr(paidCBE),inr(D.contract-paidCBE)+' still to pay Murali',()=>openTx('',null,'CBE House'))+
     li('build','Paid to landowners',`bank ${inr(landBank)} + cash per Santhiya's sheet ${inr(landCash)}`,inr(landPaid),'of ₹50L · '+inr(5000000-landPaid)+' to go',()=>openTx('',null,'Landowners - land money'))+
-    li('out','Held by Palani','received − Murali & vendors − landowners',inr(consumed),'',()=>openTx('',null,'Home loan received'))+
+    li('out','Spent by Palani','loan received − Murali & vendors − landowners',inr(consumed),'',()=>openTx('',null,'Home loan received'))+
+    li('bank','Canara interest paid so far','CBE House loan only, not in the figures above',inr(intPaid),'')+
     `<p class="dim small" style="padding:6px 16px 14px">Kept apart from the land money: loan interest (₹10K/month) ${inr(landInt)}, and money for the landowners' own expenses (under ₹25K) ${inr(landExp)}.</p>`;
    if(PJ.m==='plan')return head+`<div class="tot"><span>Ammapatti · budget</span><b>${inr(thP)}</b></div>`+
     ((PL.thot||[]).map(([n,cost,paid,bal,st])=>li('leaf',n,st+(bal>0?' · '+inr(bal)+' balance':''),inr(cost),inr(paid)+' paid')).join('')||
