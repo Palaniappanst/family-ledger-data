@@ -185,7 +185,7 @@ const CI={'EMI':'bank','Credit card payment':'wallet','Investment':'chart','Insu
 const ic=k=>`<span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${P[CI[k]||k]||P.rupee}"/></svg></span>`;
 
 // one list of every transaction, each with its classification
-const OCLS={'Paid to Murali (Jothi)':'CBE House','Other vendors':'CBE House','Loan interest & charges':'Home loan interest','IOB jewel loan repayments':'EMI',
+const OCLS={'Paid to Murali (Jothi)':'CBE House','Landowners - land money':'Landowners - land money','Loan interest (10K/month)':'Loan interest (10K/month)','Other vendors':'CBE House','Loan interest & charges':'Home loan interest','IOB jewel loan repayments':'EMI',
  'Palani taken':'Taken out (Palani)','Palani personal':'Household expenses','Awaiting decision':'To decide','Other withdrawals':'To decide','Thottam (Palani)':'Ammapatti thottam'};
 const thotIds=new Set(D.thot_ids||[]),txIds=new Set(),T=[];
 // thottam comes from thot_rows (the thottam list), so the same payments are not taken twice from tx
