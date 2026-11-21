@@ -245,7 +245,7 @@ const months=[...new Set(T.map(t=>t.d.slice(0,7)))].sort().reverse();
 $('x-m').innerHTML='<option value="">All months</option>'+months.map(m=>`<option value="${m}">${xMon(m)}</option>`).join('');
 function drawTx(){const q=$('x-q').value.toLowerCase(),m=$('x-m').value;
  const base=T.filter(t=>(!m||t.d.startsWith(m))&&(!X.f||X.f.f(t))&&(!X.md||(!t.inn&&(t.md||'Bank')===X.md))&&(!X.rv||(t.fk&&!FIN.has(t.fk)))&&(!q||(t.p+' '+t.n+' '+t.a+' '+t.c).toLowerCase().includes(q)));
- $('x-mode').innerHTML=[['','Paid by: any'],['Bank','Bank / UPI'],['Credit card','Credit card']].map(([k,l])=>`<button aria-pressed="${X.md===k}" ${go(()=>{X.md=k;X.lim=150;drawTx()})}>${l}</button>`).join('')+
+ $('x-mode').innerHTML=[['','Paid by: any'],['Bank','Bank / UPI'],['Credit card','Credit card'],['Zaggle','Zaggle']].map(([k,l])=>`<button aria-pressed="${X.md===k}" ${go(()=>{X.md=k;X.lim=150;drawTx()})}>${l}</button>`).join('')+
   `<button aria-pressed="${X.rv}" ${go(()=>{X.rv=!X.rv;X.lim=150;drawTx()})}>Not reviewed only</button>`;
  // round robin / card bills only add up when that chip itself is picked (16.11.2026)
  const R=base.filter(t=>!X.c||t.c===X.c),out=sum(R.filter(t=>!t.inn&&(X.c||isSpend(t))),t=>t.v),inn=sum(R.filter(t=>t.inn&&(X.c||!t.rr)),t=>t.v);
