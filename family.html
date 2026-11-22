@@ -380,16 +380,19 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
    // 21.11.2026 (user): received from bank -> given to Murali & vendors -> landowners -> difference held by Palani
    // 21.11.2026 (user): total investment (Palani + Murali + bank loan), then where the loan went; Canara interest apart
    const FU=D.cbe_funding||[],fuT=sum(FU,f=>f[1]),intPaid=(D.loans&&D.loans.home||{}).interest||0;
-   if(PJ.p==='cbe')return head+`<div class="tot"><span>Total investment</span><b>${inr(fuT)}</b></div>`+
-    FU.map(([n,v])=>li(n==='Bank loan'?'bank':'rupee',n,fuT?(v/fuT*100).toFixed(1)+'% of the investment':'',inr(v),'')).join('')+
-    `<div class="tot"><span>Spent on the project</span><b>${inr(paidCBE+landPaid+intPaid)}</b></div>`+
-    `<div class="tot"><span>Received from bank</span><b>${inr(D.loan_bank)}</b></div>`+
-    li('bank','Home loan received','Canara',inr(D.loan_bank),D.loan_sanction?'of '+inr(D.loan_sanction):'',()=>openTx('',null,'Home loan received'),true)+
-    li('build','Given to Murali & vendors',cbeP?'budget '+inr(cbeP):'',inr(paidCBE),inr(D.contract-paidCBE)+' still to pay Murali',()=>openTx('',null,'CBE House'))+
-    li('build','Paid to landowners',`bank ${inr(landBank)} + cash per Santhiya's sheet ${inr(landCash)}`,inr(landPaid),'of ₹50L · '+inr(5000000-landPaid)+' to go',()=>openTx('',null,'Landowners - land money'))+
-    li('out','Spent by Palani','loan received − Murali & vendors − landowners',inr(consumed),'',()=>openTx('',null,'Home loan received'))+
-    li('bank','Canara interest paid so far','CBE House loan (Visalakshi) - included in Spent on the project',inr(intPaid),'')+
-    `<p class="dim small" style="padding:6px 16px 14px">Kept apart from the land money: loan interest (₹10K/month) ${inr(landInt)}, and money for the landowners' own expenses (under ₹25K) ${inr(landExp)}.</p>`;
+   // 22.11.2026 (user's layout): total spent -> loan received -> spent from loan (its parts below) -> Palani's share; approvals + Murali apart
+   const spent=paidCBE+landPaid+intPaid,appr=(FU.find(f=>/approvals/.test(f[0]))||[0,0])[1];
+   if(PJ.p==='cbe')return head+`<div class="tot"><span>Total money spent on project</span><b>${inr(spent+appr)}</b></div>`+
+    `<p class="dim small" style="padding:0 16px 6px">Spent from the loan + Palani's approvals. Murali's initial money is shown apart.</p>`+
+    li('bank','Money received as loan from bank','Canara home loan',inr(D.loan_bank),D.loan_sanction?'of '+inr(D.loan_sanction):'',()=>openTx('',null,'Home loan received'),true)+
+    li('build','Money spent for CBE house from loan','vendors + landowners + Canara interest',inr(spent),'',()=>openTx('',null,'CBE House'))+
+    li('out','Money spent by Palani from loan','loan received − spent for CBE house',inr((D.loan_bank||0)-spent),'',()=>openTx('',null,'Home loan received'))+
+    FU.map(([n,v])=>li('rupee',n,'outside the loan',inr(v),'')).join('')+
+    `<div class="tot"><span>Spent for CBE house from loan, by part</span><b>${inr(spent)}</b></div>`+
+    li('build','Murali & vendors',cbeP?'budget '+inr(cbeP):'',inr(paidCBE),inr(D.contract-paidCBE)+' still to pay Murali',()=>openTx('',null,'CBE House'))+
+    li('build','Landowners',`bank ${inr(landBank)}${landCash?` + cash per Santhiya's sheet ${inr(landCash)}`:''}`,inr(landPaid),'of ₹50L · '+inr(5000000-landPaid)+' to go',()=>openTx('',null,'Landowners - land money'))+
+    li('bank','Canara interest','CBE House loan (Visalakshi)',inr(intPaid),'')+
+    `<p class="dim small" style="padding:6px 16px 14px">Not in these figures: landowner loan interest (₹10K/month, Palani's own) and landowners' own expenses ${inr(landExp)}.</p>`;
    if(PJ.m==='plan')return head+`<div class="tot"><span>Ammapatti · budget</span><b>${inr(thP)}</b></div>`+
     ((PL.thot||[]).map(([n,cost,paid,bal,st])=>li('leaf',n,st+(bal>0?' · '+inr(bal)+' balance':''),inr(cost),inr(paid)+' paid')).join('')||
      '<p class="dim" style="padding:20px">No plan found - keep the "Thottam" sheet in Downloads\\2026 expenses.xlsx.</p>')+
