@@ -278,7 +278,8 @@ let qt;$('x-q').oninput=()=>{clearTimeout(qt);qt=setTimeout(()=>{X.lim=150;drawT
 // ---------------- Loans (summary; tap opens the payments behind it)
 const L=D.loans||{},h=L.home||{received:0,interest:0,sanction:0,int_rows:[]},JL=(L.jl||[]).filter(l=>l.active);
 const gold=sum(L.gold||[],r=>r[1]),hdfc=L.hdfc||[],od=L.od||[];
-const owe=h.received+sum(hdfc,x=>x.outstanding)+sum(od,x=>x.amount)+gold+sum(JL,l=>l.amt);
+const MAN=L.manual||[];  // 22.11.2026 (user): liabilities typed in the Excel (money owed to family / friends)
+const owe=h.received+sum(hdfc,x=>x.outstanding)+sum(od,x=>x.amount)+gold+sum(JL,l=>l.amt)+sum(MAN,x=>+x.value||0);
 const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));return t=>s.has(t.d+'|'+Math.round(t.v))};
 (()=>{$('l-tot').textContent=inr(owe);$('l-note').textContent=`${2+hdfc.length+od.length+JL.length} loans and overdrafts`;
  const now=new Date(),mon=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`,emiM=T.filter(t=>t.c==='EMI'&&t.d.startsWith(mon));
@@ -289,6 +290,7 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
  od.forEach(x=>r+=li('wallet',x.name,'overdrawn, as on '+fd(x.date),inr(x.amount),'',()=>openTx(x.name,t=>t.a===x.name.replace(/ overdraw*.*$/i,''))));
  if(gold)r+=li('gift','Gold loan Canara bank','Palani, assumed unpaid',inr(gold),'',()=>openTx('Gold loan',null,'Gold loan received'));
  const JN={'4356':'Santhiya Gold loan IOB','4355':'Gold loan Sithambaram'};  // user's names, 13.11.2026
+ MAN.forEach(x=>r+=li('wallet',x.name,x.note||'typed in the Excel',x.value==null?'—':inr(x.value),''));
  JL.forEach(l=>r+=li('gift',JN[l.ref]||'IOB jewel loan …'+l.ref,'IOB …'+l.ref+' in '+l.who+"'s account, taken "+fd(l.date),inr(l.amt),inr(l.paid)+' paid',()=>openTx('IOB jewel loans',keyset(L.jewel||[]))));
  // 13.11.2026 (user): 'Hdfc Bank (..)' ACH lines are the same EMIs as the HDFC loans above - not shown twice.
  // A lender with no payment in the 60 days before the newest statement is taken as closed: folded at the bottom.
