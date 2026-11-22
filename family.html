@@ -206,6 +206,8 @@ const isSpend=t=>!t.inn&&!t.rr&&t.c!=='Credit card payment';
 (D.thot_rows||[]).forEach(r=>{if(!txIds.has(r[5]))T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'Ammapatti thottam',n:r[4]||''})});
 (D.recent||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:r[5]||'Not yet in a statement',n:'from bank alert / SMS',md:r[4]||'Bank',
  ck:r[6]?'alert:'+r[6]:r[2]==='Not named in alert'?'':'payee:'+r[2],co:'spend'}));  // 22.11.2026: a choice here = this payment only
+// 22.11.2026 (user): Murali's initial money - money in, shown apart from the loan; linked = its bank credit
+(D.murali_initial||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'Murali initial money',inn:true,n:r[4]?'bank: '+r[4]:'cash / account not read'}));
 (D.cbe_manual||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'CBE House',n:"from Santhiya's sheet - no bank row yet"}));
 (D.income||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[4]||'Salary',v:r[2],c:r[4]||'Salary',inn:true,n:r[3]||''}));
 // 17.11.2026: home-loan disbursements seen only in Canara SMS so far (already inside D.loan_bank)
@@ -391,7 +393,7 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
     row('bank','loan','Loan received from bank','Canara home loan',D.loan_bank,()=>openTx('',null,'Home loan received'),true)+
     row('build','spent','Spent on CBE house from loan','vendors + landowners + Canara interest',spent,()=>openTx('',null,'CBE House'))+
     row('out','pal','Spent by Palani from loan','loan received − spent on CBE house',(D.loan_bank||0)-spent)+
-    FU.map(([n,v],i)=>row('rupee','fu'+i,n,'outside the loan',v)).join('')+
+    FU.map(([n,v],i)=>row('rupee','fu'+i,n,/Murali/.test(n)?(D.murali_initial||[]).length+' receipts · tap for the list':'outside the loan',v,/Murali/.test(n)?()=>openTx('',null,'Murali initial money'):null)).join('')+
     `<div class="tot"><span>Spent for CBE house from loan, by part</span><b>${cr(spent)}</b></div>`+
     row('build','mv','Murali & vendors',cbeP?'budget '+cr(cbeP)+' · '+cr(D.contract-paidCBE)+' still to pay Murali':cr(D.contract-paidCBE)+' still to pay Murali',paidCBE,()=>openTx('',null,'CBE House'))+
     row('build','land','Landowners',`bank ${cr(landBank)}${landCash?` + cash ${cr(landCash)}`:''} · of ₹50L, ${cr(5000000-landPaid)} to go`,landPaid,()=>openTx('',null,'Landowners - land money'))+
