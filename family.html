@@ -205,7 +205,7 @@ const isSpend=t=>!t.inn&&!t.rr&&t.c!=='Credit card payment';
 // 13.11.2026: a payee made thottam by your choice is also in tx (with its dropdown) - show it once
 (D.thot_rows||[]).forEach(r=>{if(!txIds.has(r[5]))T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'Ammapatti thottam',n:r[4]||''})});
 (D.recent||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:r[5]||'Not yet in a statement',n:'from bank alert / SMS',md:r[4]||'Bank',
- ck:r[2]==='Not named in alert'?'':'payee:'+r[2],co:'spend'}));
+ ck:r[6]?'alert:'+r[6]:r[2]==='Not named in alert'?'':'payee:'+r[2],co:'spend'}));  // 22.11.2026: a choice here = this payment only
 (D.cbe_manual||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'CBE House',n:"from Santhiya's sheet - no bank row yet"}));
 (D.income||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[4]||'Salary',v:r[2],c:r[4]||'Salary',inn:true,n:r[3]||''}));
 // 17.11.2026: home-loan disbursements seen only in Canara SMS so far (already inside D.loan_bank)
