@@ -206,6 +206,7 @@ const isSpend=t=>!t.inn&&!t.rr&&t.c!=='Credit card payment';
 (D.thot_rows||[]).forEach(r=>{if(!txIds.has(r[5]))T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'Ammapatti thottam',n:r[4]||''})});
 (D.recent||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:r[5]||'Not yet in a statement',n:'from bank alert / SMS',md:r[4]||'Bank',
  ck:r[2]==='Not named in alert'?'':'payee:'+r[2],co:'spend'}));
+(D.cbe_manual||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[2],v:r[3],c:'CBE House',n:"from Santhiya's sheet - no bank row yet"}));
 (D.income||[]).forEach(r=>T.push({d:r[0],a:r[1],p:r[4]||'Salary',v:r[2],c:r[4]||'Salary',inn:true,n:r[3]||''}));
 // 17.11.2026: home-loan disbursements seen only in Canara SMS so far (already inside D.loan_bank)
 (D.loan_prov||[]).forEach(r=>T.push({d:r[0],a:'Canara home loan',p:'Home loan disbursement',v:r[1],c:'Home loan received',inn:true,n:'from Canara SMS - provisional until the statement'}));
@@ -328,7 +329,8 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
   dues.map(r=>hap('bank',(r.amount?inr(r.amount)+' · ':'')+esc(r.what),'Due '+fd(r.due)+(dIn(r)===0?' (today)':` (in ${dIn(r)} day${dIn(r)===1?'':'s'})`),()=>{})).join('')+
   (decN?hap('q',decN+' items to decide','Pick a tag so they are counted right',()=>openTx('',null,'To decide')):'')+
   hap('rupee','Paid today '+inr(sum(tod,t=>t.v)),tod.length+' payment'+(tod.length===1?'':'s')+' so far',()=>{X.md='';openTx('Paid today',t=>t.d===today&&isSpend(t))});
- const VEND=['Paid to Murali (Jothi)','Other vendors'],paidCBE=sum(D.tx.filter(t=>VEND.includes(t.o)),t=>t.v),PJ={p:null,m:'actual'};
+ // 22.11.2026 (user): every row tagged CBE counts - statements, your choices on payments (e.g. ₹88K Thangam), alerts, manual
+ const paidCBE=sum(T.filter(t=>['CBE House','CBE Project'].includes(t.c)&&!t.inn&&!t.rr),t=>t.v),PJ={p:null,m:'actual'};
  // 16.11.2026 (user): Palani consumed (CBE) = home loan taken - given to Murali (incl. vendor payments)
  // 21.11.2026 (user): landowner money (₹50L, via Murali) also leaves the loan; cash rows come from Santhiya's sheet
  const landBank=sum(T.filter(t=>t.c==='Landowners - land money'),t=>t.v),landCash=sum((D.land_manual||[]).filter(r=>r[1]>=25000),r=>r[1]),landPaid=landBank+landCash;
@@ -380,13 +382,13 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
    const FU=D.cbe_funding||[],fuT=sum(FU,f=>f[1]),intPaid=(D.loans&&D.loans.home||{}).interest||0;
    if(PJ.p==='cbe')return head+`<div class="tot"><span>Total investment</span><b>${inr(fuT)}</b></div>`+
     FU.map(([n,v])=>li(n==='Bank loan'?'bank':'rupee',n,fuT?(v/fuT*100).toFixed(1)+'% of the investment':'',inr(v),'')).join('')+
-    `<div class="tot"><span>Spent on the project</span><b>${inr(paidCBE+landPaid)}</b></div>`+
+    `<div class="tot"><span>Spent on the project</span><b>${inr(paidCBE+landPaid+intPaid)}</b></div>`+
     `<div class="tot"><span>Received from bank</span><b>${inr(D.loan_bank)}</b></div>`+
     li('bank','Home loan received','Canara',inr(D.loan_bank),D.loan_sanction?'of '+inr(D.loan_sanction):'',()=>openTx('',null,'Home loan received'),true)+
     li('build','Given to Murali & vendors',cbeP?'budget '+inr(cbeP):'',inr(paidCBE),inr(D.contract-paidCBE)+' still to pay Murali',()=>openTx('',null,'CBE House'))+
     li('build','Paid to landowners',`bank ${inr(landBank)} + cash per Santhiya's sheet ${inr(landCash)}`,inr(landPaid),'of ₹50L · '+inr(5000000-landPaid)+' to go',()=>openTx('',null,'Landowners - land money'))+
     li('out','Spent by Palani','loan received − Murali & vendors − landowners',inr(consumed),'',()=>openTx('',null,'Home loan received'))+
-    li('bank','Canara interest paid so far','CBE House loan only, not in the figures above',inr(intPaid),'')+
+    li('bank','Canara interest paid so far','CBE House loan (Visalakshi) - included in Spent on the project',inr(intPaid),'')+
     `<p class="dim small" style="padding:6px 16px 14px">Kept apart from the land money: loan interest (₹10K/month) ${inr(landInt)}, and money for the landowners' own expenses (under ₹25K) ${inr(landExp)}.</p>`;
    if(PJ.m==='plan')return head+`<div class="tot"><span>Ammapatti · budget</span><b>${inr(thP)}</b></div>`+
     ((PL.thot||[]).map(([n,cost,paid,bal,st])=>li('leaf',n,st+(bal>0?' · '+inr(bal)+' balance':''),inr(cost),inr(paid)+' paid')).join('')||
