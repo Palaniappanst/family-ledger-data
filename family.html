@@ -359,11 +359,11 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
     li('wallet','Credit card bills',"the swipes are already in this month's spend",inr(bills),'',()=>ot('','',null,'Credit card payment',mon))},
   // 13.11.2026 (user): Projects = pick a project first; inside, Plan (budget) | Actual (what the statements show)
   projects:()=>{const PL=D.plan||{},cbeP=sum(PL.cbe||[],r=>r[3]),thP=sum(PL.thot||[],r=>r[1]),thA=sum(T.filter(t=>t.c==='Ammapatti thottam'),t=>t.v);
-   if(!PJ.p)return li('build','CBE House',cbeP?'plan '+inr(cbeP):'Coimbatore',inr(paidCBE),'paid so far',()=>{PJ.p='cbe';PJ.m='actual';draw()})+
-    li('leaf','Ammapatti thottam',thP?'plan '+inr(thP):'tracking only',inr(thA),'spent so far',()=>{PJ.p='thot';PJ.m='actual';draw()});
+   if(!PJ.p)return li('build','CBE House','Coimbatore',inr(paidCBE),'paid so far',()=>{PJ.p='cbe';PJ.m='actual';draw()})+
+    li('leaf','Ammapatti thottam','tracking only',inr(thA),'spent so far',()=>{PJ.p='thot';PJ.m='actual';draw()});
    const head=`<div class="chips" role="group" aria-label="Plan or actual" style="padding:12px 12px 4px">`+
     `<button ${go(()=>{PJ.p=null;draw()})}>‹ All projects</button>`+
-    [['plan','Plan'],['actual','Actual']].map(([k,l])=>`<button aria-pressed="${PJ.m===k}" ${go(()=>{PJ.m=k;draw()})}>${l}</button>`).join('')+`</div>`;
+    `</div>`;  // 22.11.2026 (user): no Plan view in the app for now - actual only (plan -> transactions to be built properly later)
    if(PJ.p==='cbe'&&PJ.m==='plan'){
     // editable budget (13.11.2026): own edits show at once (kept with the other choices), everyone else's after the PC applies them
     let o={};try{o=JSON.parse(localStorage.getItem('fl_dec')||'{}')}catch(e){}
@@ -397,13 +397,13 @@ const keyset=rows=>{const s=new Set(rows.map(r=>r[0]+'|'+Math.round(r[1])));retu
     row('out','pal','Spent by Palani from loan','loan received − spent on CBE house',(D.loan_bank||0)-spent)+
     FU.map(([n,v],i)=>row('rupee','fu'+i,n,/Murali/.test(n)?(D.murali_initial||[]).length+' receipts · tap for the list':'outside the loan',v,/Murali/.test(n)?()=>openTx('',null,'Murali initial money'):null)).join('')+
     `<div class="tot"><span>Spent for CBE house from loan, by part</span><b>${cr(spent)}</b></div>`+
-    row('build','mv','Murali & vendors',cbeP?'budget '+cr(cbeP)+' · '+cr(D.contract-paidCBE)+' still to pay Murali':cr(D.contract-paidCBE)+' still to pay Murali',paidCBE,()=>openTx('',null,'CBE House'))+
+    row('build','mv','Murali & vendors',cr(D.contract-paidCBE)+' still to pay Murali',paidCBE,()=>openTx('',null,'CBE House'))+
     row('build','land','Landowners',`bank ${cr(landBank)}${landCash?` + cash ${cr(landCash)}`:''} · of ₹50L, ${cr(5000000-landPaid)} to go`,landPaid,()=>openTx('',null,'Landowners - land money'))+
     row('bank','int','Canara interest','CBE House loan (Visalakshi)',intPaid,()=>openTx('',null,'Home loan interest'))+
     `<p class="dim small" style="padding:6px 16px 14px">Not in these figures: landowner loan interest (₹10K/month, Palani's own) and landowners' own expenses ${cr(landExp)}.</p>`;
    if(PJ.m==='plan')return head+`<div class="tot"><span>Ammapatti · budget</span><b>${inr(thP)}</b></div>`+
-    ((PL.thot||[]).map(([n,cost,paid,bal,st])=>li('leaf',n,st+(bal>0?' · '+inr(bal)+' balance':''),inr(cost),inr(paid)+' paid')).join('')||
-     '<p class="dim" style="padding:20px">No plan found - keep the "Thottam" sheet in Downloads\\2026 expenses.xlsx.</p>')+
+    ((PL.thot||[]).map(([n,cost,paid,bal,st])=>li('leaf',n,st,inr(cost),inr(paid)+' paid')  /* 22.11.2026 (user): no 'still to pay' until a proper list */).join('')||
+     '<p class="dim" style="padding:20px">Thottam plan list to be prepared.</p>')+
     `<div class="tot"><span>Paid per your sheet</span><b>${inr(sum(PL.thot||[],r=>r[2]))}</b></div>`;
    return head+`<div class="tot"><span>Ammapatti · actual</span><b>${inr(thA)}</b></div>`+
     li('leaf','Thottam payments','from the bank statements',inr(thA),thP?'budget '+inr(thP):'',()=>openTx('',null,'Ammapatti thottam'))},
