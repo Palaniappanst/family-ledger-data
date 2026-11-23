@@ -202,7 +202,9 @@ function flPick(d0){try{const c=JSON.parse(FL.get('fl_data')||'null');if(c&&(!d0
 async function flDec(e,pin){const b=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0)),te=new TextEncoder();
  const k0=await crypto.subtle.importKey('raw',te.encode(pin),'PBKDF2',false,['deriveKey']);
  const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b(e.salt),iterations:e.iter,hash:'SHA-256'},k0,{name:'AES-GCM',length:256},false,['decrypt']);
- return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:b(e.iv)},k,b(e.ct))))}
+ const p=await crypto.subtle.decrypt({name:'AES-GCM',iv:b(e.iv)},k,b(e.ct));
+ // e.z (23.11.2026): gzipped before encrypting, ~1 MB -> a fraction
+ return JSON.parse(await (e.z?new Response(new Blob([p]).stream().pipeThrough(new DecompressionStream('gzip'))):new Response(p)).text())}
 function flAsk(msg){return new Promise(ok=>{const o=document.createElement('div');
  o.style.cssText='position:fixed;inset:0;z-index:9;display:grid;place-items:center;background:rgba(11,24,40,.92);padding:16px';
  o.innerHTML=`<form style="background:var(--panel);border:1px solid var(--line);padding:20px;max-width:320px;width:100%;display:grid;gap:10px">
@@ -217,15 +219,21 @@ const SS={get:k=>{try{return sessionStorage.getItem(k)}catch(e){return null}},se
 // refresh shows up at once); falls back to the raw URL if the API is unreachable or rate-limited (60/hour).
 async function flGet(){if(window.FL_API){try{const r=await fetch(FL_API,{cache:'no-store',headers:{Accept:'application/vnd.github.raw'}});if(r.ok)return r}catch(e){}}
  return fetch(FL_URL+'?t='+Date.now(),{cache:'no-store'})}
-async function flLock(d){let e=null;
- try{const r=await flGet();if(r.ok){e=await r.json();FL.set('fl_enc',JSON.stringify(e))}}catch(err){}
- if(!e)try{e=JSON.parse(FL.get('fl_enc')||'null')}catch(err){}
- if(!e)return;
- if(d){if(e.ts<=(d.generated_ts||0))return;   // unlocked this session: just pick up newer figures
-  try{SS.set('fl_data',JSON.stringify(await flDec(e,SS.get('fl_pin'))));location.reload()}catch(err){}return}
+async function flLock(d){
+ // 23.11.2026 (user: app slow to open): the file was fetched just before this reload - no second download
+ if(d&&SS.get('fl_fresh')){SS.set('fl_fresh','');return}
+ // download while the PIN is typed (the PIN box used to wait for the whole file)
+ const load=async()=>{let e=null;
+  try{const r=await flGet();if(r.ok){e=await r.json();FL.set('fl_enc',JSON.stringify(e))}}catch(err){}
+  if(!e)try{e=JSON.parse(FL.get('fl_enc')||'null')}catch(err){}
+  return e};
+ let got=load();
+ if(d){const e=await got;if(!e||e.ts<=(d.generated_ts||0))return;   // unlocked this session: just pick up newer figures
+  try{SS.set('fl_data',JSON.stringify(await flDec(e,SS.get('fl_pin'))));SS.set('fl_fresh','1');location.reload()}catch(err){}return}
  let msg='Enter the family PIN';
- for(;;){const pin=await flAsk(msg);
-  try{const x=await flDec(e,pin);SS.set('fl_pin',pin);SS.set('fl_data',JSON.stringify(x));location.reload();return}
+ for(;;){const pin=await flAsk(msg);const e=await got;
+  if(!e){msg='No figures yet - check the internet and enter the PIN again';got=load();continue}
+  try{const x=await flDec(e,pin);SS.set('fl_pin',pin);SS.set('fl_data',JSON.stringify(x));SS.set('fl_fresh','1');location.reload();return}
   catch(err){msg='Wrong PIN, try again'}}}
 async function flUpdate(d){if(!window.FL_URL)return;
  if(window.FL_LOCK)return flLock(d);
